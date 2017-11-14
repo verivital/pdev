@@ -220,6 +220,7 @@ def getTrace1D(matrix_a, vector_b, U0, step, num_steps):
 
     return U
 
+
 def plotTrace(trace, step):
     'plot trace of the discreted ODE model'
 
