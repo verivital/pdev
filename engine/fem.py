@@ -7,7 +7,7 @@ Main references:
     2) The Finite Element Method: Theory, Implementation and Applications, Mats G. Larson, Fredirik Bengzon
 '''
 
-from scipy.sparse import lil_matrix
+from scipy.sparse import lil_matrix, csc_matrix, linalg
 from scipy.integrate import quad
 import numpy as np
 
@@ -39,7 +39,7 @@ def MassAssembler1D(x):
         if i - 1 >= 0:
             mass_matrix[i, i - 1] = hi / 6
 
-    return mass_matrix.tocsr()
+    return mass_matrix.tocsc()
 
 
 def StiffAssembler1D(x):
@@ -69,7 +69,7 @@ def StiffAssembler1D(x):
         if i - 1 >= 0:
             stiff_matrix[i, i - 1] = -1 / hi
 
-    return stiff_matrix.tocsr()
+    return stiff_matrix.tocsc()
 
 
 def f_mul_phi_func(y, fc, pc):
@@ -77,6 +77,9 @@ def f_mul_phi_func(y, fc, pc):
 
     # assume f is polynomial function f = c0 + c1*y + c2*y^2 + ... + cm * y^m
     # phi is hat function defined on pc = [pc[0], pc[1], pc[2]]
+
+    # todo: add more general function f which depends on t and x. using np.dblquad to calculate
+    # double integration
 
     assert isinstance(fc, list)
     assert isinstance(pc, list)
@@ -105,9 +108,9 @@ def LoadAssembler1D(x, fc, f_dom):
 
     # x is list of discretized mesh points for example x = [0 , 0.1, 0.2, .., 0.9, 1]
     # y is a variable that used to construct the f * phi function
-    # f is input function, here we consider polynomial function in space
+    # fc is the input function, here we consider polynomial function in space
     # i.e. f = c0 + c1 * x + c2 * x^2 + .. + cm * x^m
-    # input f = [c0, c1, c2, ... cm]
+    # input fc = [c0, c1, c2, ... cm]
     # f_dom defines the segment where the input function effect,
     # f_domain = [x1, x2] ,  0 <= x1 <= x2 <= x_max
     # return [b_i] = integral (f * phi_i dx)
@@ -138,18 +141,111 @@ def LoadAssembler1D(x, fc, f_dom):
         I = quad(fphi, f_dom[0], f_dom[1])
         b[i, 0] = I[0]
 
-    return b.tocsr()
+    return b.tocsc()
+
+
+def get_ode_1D(mass_mat, stiff_mat, load_vec, time_step):
+    'obtain discreted ODE model'
+
+    # the discreted ODE model has the form of: U_n = A * U_(n-1) + b
+
+    M = mass_mat
+    S = stiff_mat
+    l = load_vec
+    k = time_step
+
+    assert isinstance(M, csc_matrix)
+    assert isinstance(S, csc_matrix)
+    assert isinstance(l, csc_matrix)
+    assert isinstance(k, float)
+    assert (k > 0), 'time step k = {} should be >= 0'.format(k)
+
+    A = linalg.inv((M + S.multiply(k / 2))) * (M - S.multiply(k / 2))
+    b = linalg.inv(M + S.multiply(k / 2)) * l.multiply(k)
+
+    return A, b
+
+
+def u0x_func(x, c):
+    'return u(x, 0) = u_0(x) initial function at t = 0'
+
+    # assumpe u_0(x) is a polynomial function defined by u_0(x) = c0 + c1 * x1 + ... + cn * x^n
+
+    assert isinstance(c, list)
+    assert len(c) >= 1, 'len(c) = {} should be >= 1'.format(len(c))
+
+    def f(x):
+        return sum(a * x**i for i, a in enumerate(c))
+
+    return f
+
+
+def get_init_condition(x, u0x_func):
+    'get initial condition from initial condition function'
+
+    # x is list of discreted mesh points, for example x = [0 , 0.1, 0.2, .., 0.9, 1]
+    # u0x_func is defined above
+    assert isinstance(x, list)
+    assert len(x) >= 3, 'len(x) = {} should be >= 3'.format(len(x))
+
+    n = len(x) - 2
+    u0 = lil_matrix((n, 1), dtype=float)
+
+    for i in xrange(0, n):
+        v = x[i + 1]
+        u0[i, 0] = u0x_func(v)
+
+    return u0.tocsc()
+
+
+def get_trace_1D(matrix_a, vector_b, U0, step, num_steps):
+    'produce a trace of the discreted ODE model'
+
+    U = []
+    times = np.linspace(0, step * num_steps, num_steps + 1)
+    print "\n times = {}".format(times)
+
+    n = len(times)
+
+    for i in xrange(0, n):
+        print "\ni={}".format(i)
+        if i == 0:
+            U.append(U0)
+        else:
+            U_n_minus_1 = U[i - 1]
+            U_n = matrix_a * U_n_minus_1 + vector_b
+            U.append(U_n)
+
+        print "\n t = {} -> \n U =: \n{}".format(i * step, U[i].todense())
+
+    return U
 
 
 if __name__ == '__main__':
 
-    x = [0.0, 0.5, 1.0, 1.5, 2.0]
-    mass_matrix = MassAssembler1D(x)
-    stiff_matrix = StiffAssembler1D(x)
-    fc = [1.0, 0.0, 2.0]
-    fdom = [0.5, 1.0]
-    load_vector = LoadAssembler1D(x, fc, fdom)
+    x = [0.0, 0.5, 1.0, 1.5, 2.0]    # generate mesh points
+
+    mass_matrix = MassAssembler1D(x)    # compute mass matrix M
+    stiff_matrix = StiffAssembler1D(x)    # compute stiff matrix S
+
+    fc = [1.0, 0.0, 2.0]    # define input function f
+    fdom = [0.5, 1.0]    # domain of input function
+    load_vector = LoadAssembler1D(x, fc, fdom)    # compute load vector
 
     print "\nmass matrix = \n{}".format(mass_matrix.todense())
     print "\nstiff matrix = \n{}".format(stiff_matrix.todense())
     print "\nload vector = \n{}".format(load_vector.todense())
+
+    step = 0.1    # time step of FEM
+    A, b = get_ode_1D(mass_matrix, stiff_matrix, load_vector, step)    # get the discreted ODE model
+
+    print "\nA = {} \nb = {}".format(A.todense(), b.todense())
+    print "\ntype of A is {}, type of b is {}".format(type(A), type(b))
+
+    y = []
+    c = [1, 2]    # parameters for initial function u0(x)
+    u0_func = u0x_func(y, c)    # define initial function u0(x)
+    u0 = get_init_condition(x, u0_func)    # compute initial conditions
+    print"\nu0 = {}".format(u0.todense())    # initial condition vector u0
+
+    u = get_trace_1D(A, b, u0, step=0.1, num_steps=4)    # get trace with initial vector u0
