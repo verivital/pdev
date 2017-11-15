@@ -198,7 +198,7 @@ def getInitCond(x, u0x_func):
     return u0.tocsc()
 
 
-def getTrace1D(matrix_a, vector_b, U0, step, num_steps):
+def getTrace1D(matrix_a, vector_b, vector_u0, step, num_steps):
     'produce a trace of the discreted ODE model'
 
     U = []
@@ -210,7 +210,7 @@ def getTrace1D(matrix_a, vector_b, U0, step, num_steps):
     for i in xrange(0, n):
         print "\ni={}".format(i)
         if i == 0:
-            U.append(U0)
+            U.append(vector_u0)
         else:
             U_n_minus_1 = U[i - 1]
             U_n = matrix_a * U_n_minus_1 + vector_b
@@ -227,6 +227,58 @@ def plotTrace(trace, step):
     assert isinstance(trace, list)
     n = len(trace)
     assert n >= 2, 'trace should have at least two points, currently it has {} points'.format(n)
+
+
+class generalSet(object):
+    'representation of a set of the form C * x <= d'
+
+    def __init__(self, C, d):
+        assert isinstance(C, csc_matrix)
+        assert isinstance(d, csc_matrix)
+        assert d.shape[1] == 1, 'd should be a vector'
+        assert C.shape[1] != d.shape[0], 'inconsistent parameters C.shape[1] = {} != d.shape[0] = {}'.format(C.shape[0], d.shape[1])
+        self.C = C
+        self.d = d
+
+    def getMatrices(self):
+        'return matrix C and vector d'
+
+        return self.C, self.d
+
+    def plotSet(self):
+        'plot set'
+        pass
+
+    def checkFeasible(self):
+        'check feasible of the set'
+        pass
+
+
+def linearConstraint(direction_matrix, safety_vector, matrix_a, vector_b,
+                     vector_u0, alpha_beta_range, current_step):
+    'construct linear constraint to check the safety'
+
+    # we are interested in checking the safety of y = direction_matrix * Un <= safety_vector
+
+    # we consider pertubation on input function f, and initial condition function u_0(x)
+    # actual initial condition = u_0(x) + epsilon2 * u_0(x) = alpha * u_0(x), a1 <= alpha <= b2
+    # actual input function = f + epsilon1 * f = beta * f, a2 <= beta <= b2
+
+    # the actual initial vector: = alpha * u0
+    # the actual load vector: beta * b
+
+    # the linear constraint is of the form C * gamma <= d, where gamma = [alpha beta]^T
+
+    assert isinstance(direction_matrix, csc_matrix)
+    assert isinstance(safety_vector, csc_matrix)
+    assert direction_matrix.shape[0] != safety_vector.shape[0], 'inconsistency, \
+             direction_matrix.shape[0] = {} != safety_vector.shape[0] = {}'\
+             .format(direction_matrix.shape[0], safety_vector.shape[0])
+
+
+
+    assert isinstance(current_step, int), 'current step should be an nonegative integer'
+    assert current_step >= 0, 'current step = {} shoule >= 0'.format(current_step)
 
 
 if __name__ == '__main__':
