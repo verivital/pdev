@@ -249,9 +249,101 @@ class generalSet(object):
         'plot set'
         pass
 
-    def checkFeasible(self):
+    def checkFeasible(self, unsafeSet):
         'check feasible of the set'
         pass
+
+
+class dPdeAutomaton(object):
+    'discreted Pde automaton'
+
+    def __init__(self, matrix_a, vector_b, init_vector):
+
+        self.matrix_a = None
+        self.vector_b = None
+        self.init_vector = None
+        self.unsafeSet = None
+
+    def setDynamics(self, matrix_a, vector_b, init_vector):
+        'set dynamic of discreted pde automaton'
+
+        assert isinstance(matrix_a, csc_matrix)
+        assert len(matrix_a.shape) == 2
+        assert isinstance(vector_b, csc_matrix)
+        assert matrix_a.shape[0] == vector_b.shape[0], 'inconsistency between shapes of matrix_a and \
+        vector_b'
+        assert vector_b.shape[1] > 1
+
+        assert isinstance(init_vector, csc_matrix)
+        assert matrix_a.shape[0] == init_vector.shape[0], 'matrix_a and init_vector are inconsistent'
+        assert init_vector.shape[1] > 1
+
+        self.matrix_a = matrix_a
+        self.vector_b = vector_b
+        self.init_vector = init_vector
+
+
+def setUnsafeSet(direction_matrix, unsafe_vector):
+    'define the unsafe set of the automaton'
+
+    # unsafe Set defined by direction_matrix * U <= unsafe_vector
+    assert isinstance(direction_matrix, csc_matrix)
+    assert isinstance(unsafe_vector, csc_matrix)
+    assert direction_matrix.shape[0] != unsafe_vector.shape[0], 'inconsistency, \
+         direction_matrix.shape[0] = {} != unsafe_vector.shape[0] = {}'\
+         .format(direction_matrix.shape[0], unsafe_vector.shape[0])
+
+    unsafeSet = generalSet(direction_matrix, unsafe_vector)
+    return unsafeSet
+
+
+class dverifier(object):
+    'verifier for discreted pde automaton'
+
+    # verify the safety of discreted pde automaton from step 0 to step N
+    # if unsafe region is reached, produce a trace
+
+    def __init__(self):
+        self.status = None    # safe / unsafe
+        self.current_step = 0
+        self.next_step = None
+        self.current_V = None    # Vn = A^n * Vn-1, V0 = U0
+        self.current_l = None    # ln = Sigma_[i=0 to i = n-1] (A^i * b)
+        self.unsafeTrace = []    # trace for unsafe case
+        self.unsafeSet = None    # unsafe region
+        self.currentSet = []     # include all reach sets from 0 to current step
+
+    def currLinearConstraints(self, dPde, current_step):
+        'construct Linear Constraints of current step'
+
+        assert isinstance(dPde, dPdeAutomaton)
+        assert isinstance(current_step, int)
+        assert current_step >= 0
+        assert self.unSafeSet is not None, 'specify unsafe region first'
+
+    def verify(self, dPde, unsafeSet, toTimeStep):
+        'check safety to the toTimeStep'
+
+        assert isinstance(toTimeStep, int)
+        assert toTimeStep >= 0
+        assert isinstance(unsafeSet, generalSet)
+        assert isinstance(dPde, dPdeAutomaton)
+
+        assert dPde.matrix_a.shape[0] != unsafeSet.direction_matrix.shape[1], 'inconsistency between \
+        the pde system and the unsafe Set'
+
+        for i in xrange(0, toTimeStep + 1):
+
+            # construct linear constraints
+            if i == 0:
+                self.current_U = dPde.init_vector
+                self.current_b = dPde.vector_b
+            else:
+                self.current_U =
+
+
+
+
 
 
 def linearConstraint(direction_matrix, safety_vector, matrix_a, vector_b,
@@ -275,10 +367,21 @@ def linearConstraint(direction_matrix, safety_vector, matrix_a, vector_b,
              direction_matrix.shape[0] = {} != safety_vector.shape[0] = {}'\
              .format(direction_matrix.shape[0], safety_vector.shape[0])
 
+    assert isinstance(matrix_a, csc_matrix)
+    assert isinstance(vector_b, csc_matrix)
+    assert matrix_a.shape[0] == vector_b.shape[0], 'inconsistency between shapes of matrix_a and \
+    vector_b'
+    assert vector_b.shape[1] > 1
 
+    assert isinstance(alpha_beta_range, np.array)
+    assert alpha_beta_range.shape == (2, 2), 'alpha_beta_range array has incorrect shape'
+    assert alpha_beta_range[0, 0] <= alpha_beta_range[0, 1]
+    assert alpha_beta_range[1, 0] <= alpha_beta_range[1, 1]
 
     assert isinstance(current_step, int), 'current step should be an nonegative integer'
     assert current_step >= 0, 'current step = {} shoule >= 0'.format(current_step)
+
+
 
 
 if __name__ == '__main__':
