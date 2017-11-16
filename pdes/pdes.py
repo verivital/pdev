@@ -367,7 +367,164 @@ class HeatThreeDimension(object):
 
         return self.diffusity_const * (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
 
+class FirstOrderWaveEqOneDimension1(object):
+	"""Generate ODEs from 1-d wave equation"""
 
+    # This benchmark is from the book: "Numerical Partial Differential Equations:
+    # finite difference method"
+    # J. W. Thomas, Springer
+	
+	# we consider Dirichlet Boundary Condition at x = 0, u = 0.5. use backward space discretization difference scheme
+    def __init__(self, speed_const, len_x):# x = 0 is not included
+
+        self.speed_const = speed_const if speed_const > 0 else 0  # speed_const
+        self.len_x = len_x if len_x > 0 else 0    # length along x-axis
+        if self.speed_const == 0 or self.len_x == 0:
+            raise ValueError('inappropriate parameters')
+
+
+    def get_odes(self, num_x):
+        'Generate linear state space model dot(x) = Ax + Bu'
+
+        'obtain linear model of the benchmark'
+        assert isinstance(num_x, int), "number of mesh point should be an integer"
+
+        if num_x <= 0:
+            raise ValueError('number of mesh points should be larger than zero')
+
+        disc_step_x = self.len_x / num_x  # dicrezation step along x axis
+        print "\ndiscretization step along x-axis is: {} cm".format(disc_step_x)
+		
+        # changing the sparsity structure of a csr_matrix is expensive. lil_matrix is more efficient
+        matrix_a = sparse.lil_matrix((num_x, num_x))
+        matrix_b = sparse.lil_matrix((num_x, 1))
+
+        a = self.speed_const / disc_step_x
+
+        # fill matrix_a
+
+        for i in xrange(0, num_x):
+            matrix_a[i, i] = a  # filling diagonal
+
+            # fill along x - axis, subdiagonal
+            if (i - 1 >= 0):
+                matrix_a[i, i - 1] = -a
+				
+		matrix_b[0, 0] = - a * 1/2
+		
+        return matrix_a.tocsr(), matrix_b.tocsr()
+
+class FirstOrderWaveEqOneDimension2(object):
+	"""Generate ODEs from 1-d wave equation"""
+
+    # This benchmark is from the book: "Numerical Partial Differential Equations:
+    # finite difference method"
+    # J. W. Thomas, Springer
+	
+	# we consider Periodic Boundary Condition at x = 0, u = 0.5. use forward space discretization difference scheme
+    def __init__(self, speed_const, len_x):# x = 0 is not included
+
+        self.speed_const = speed_const if speed_const > 0 else 0  # speed_const
+        self.len_x = len_x if len_x > 0 else 0    # length along x-axis
+        if self.speed_const == 0 or self.len_x == 0:
+            raise ValueError('inappropriate parameters')
+
+
+    def get_odes(self, num_x):
+        'Generate linear state space model dot(x) = Ax + Bu'
+
+        'obtain linear model of the benchmark'
+        assert isinstance(num_x, int), "number of mesh point should be an integer"
+
+        if num_x <= 0:
+            raise ValueError('number of mesh points should be larger than zero')
+
+        disc_step_x = self.len_x / num_x  # dicrezation step along x axis
+        print "\ndiscretization step along x-axis is: {} cm".format(disc_step_x)
+		
+        # changing the sparsity structure of a csr_matrix is expensive. lil_matrix is more efficient
+        matrix_a = sparse.lil_matrix((num_x, num_x))
+        matrix_b = sparse.lil_matrix((num_x, 1))
+
+        a = self.speed_const / disc_step_x
+
+        # fill matrix_a
+
+        for i in xrange(0, num_x):
+            matrix_a[i, i] = -a  # filling diagonal
+
+            # fill along x - axis, subdiagonal
+            matrix_a[i + 1, i] = a
+				
+		matrix_a[num_x - 1, 0] = a
+		
+        return matrix_a.tocsr(), matrix_b.tocsr()
+
+class FirstOrderWaveEqTwoDimension		
+    """Generate ODEs from 2-d 1st order wave equation"""
+
+    # This benchmark is from the book: "Numerical Partial Differential Equations:
+    # finite difference method"
+    # J. W. Thomas, Springer
+	
+	# we consider Dirichlet B.C. at x = 0, u = 0.5. and y = 0, u = 1. Use backward space discretization difference scheme
+	
+    def __init__(self, xspeed_const, yspeed_const, len_x, len_y):
+		self.xspeed_const = xspeed_const if xspeed_const > 0 else 0  # xspeed_const
+		self.yspeed_const = yspeed_const if yspeed_const > 0 else 0  # yspeed_const
+        self.len_x = len_x if len_x > 0 else 0  # length x
+        self.len_y = len_y if len_y > 0 else 0  # length y
+		
+		if self.xspeed_const == 0 or self.yspeed_const or self.len_x == 0 or self.len_y == 0:
+            raise ValueError('inappropriate parameters')
+
+    def get_odes(self, num_x, num_y):
+        'obtain linear model of the benchmark'
+        assert isinstance(num_x, int), "number of mesh point should be an integer"
+        assert isinstance(num_y, int), "number of messh point should be an integer"
+
+        if num_x <= 0 or num_y <= 0:
+            raise ValueError('number of mesh points should be larger than zero')
+
+        disc_step_x = self.len_x / num_x  # dicrezation step along x axis
+        print "\ndiscretization step along x-axis is: {} cm".format(disc_step_x)
+        disc_step_y = self.len_y / num_y  # discrezation step along y axis
+        print "\ndiscretization step along y-axis is: {} cm\n".format(disc_step_y)
+
+        num_var = num_x * num_y  # number of discrezation state variables
+        # changing the sparsity structure of a csr_matrix is expensive. lil_matrix is more efficient
+        matrix_a = sparse.lil_matrix((num_var, num_var))
+        matrix_b = sparse.lil_matrix((num_var, 1))	#incorporate 2 B.C. into one column 
+
+        a = self.xspeed_const / disc_step_x	#xspeed/delta x
+        b = self.yspeed_const / disc_step_y #yspeed/delta y
+
+        # fill matrix_a
+
+        for i in xrange(0, num_var):	#each submatrix is x by x and we have y by y blocks
+            matrix_a[i, i] = a + b    # filling diagonal
+            x_pos = i % num_x     # x-position corresponding to i-th state variable
+            y_pos = int((i - x_pos) / num_x)
+            print "the {}th variable is the temperature at the mesh point ({},{})".format(i, x_pos, y_pos)
+            
+			# fill along x - axis
+            if y_pos = 0:#first block
+                matrix_a[i, i - 1] = -a  #building B
+				matrix_a[i, i] = b + a
+				
+				matrix_b[i, 0] = b* 1/2	  #B.C. at x = 0, we assume x = 1/2	
+				
+            else:
+                matrix_a[i, i - 1] = -a  #building B
+				matrix_a[i, i] = b + a
+				
+				matrix_a[i, i - num_x] = -b # building - I
+			
+			if x_pos = 0
+				matrix_b[i, 0] = matrix_b[i, 0] - a * 1 #B.C. at y = 0, we assume y = 1			
+			
+        return matrix_a.tocsr(), matrix_b.tocsr()	
+		
 def sim_odeint_sparse(sparse_a_matrix, init_vec, input_vec, step, num_steps):
     'use odeint and keep the A matrix sparse'
 
