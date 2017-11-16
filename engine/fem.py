@@ -7,7 +7,7 @@ Main references:
     2) The Finite Element Method: Theory, Implementation and Applications, Mats G. Larson, Fredirik Bengzon
 '''
 
-from scipy.sparse import lil_matrix, csc_matrix, linalg
+from scipy.sparse import lil_matrix, csc_matrix, linalg, hstack, vstack
 from scipy.integrate import quad
 import numpy as np
 
@@ -232,26 +232,36 @@ def plotTrace(trace, step):
 class generalSet(object):
     'representation of a set of the form C * x <= d'
 
-    def __init__(self, C, d):
-        assert isinstance(C, csc_matrix)
-        assert isinstance(d, csc_matrix)
-        assert d.shape[1] == 1, 'd should be a vector'
-        assert C.shape[1] != d.shape[0], 'inconsistent parameters C.shape[1] = {} != d.shape[0] = {}'.format(C.shape[0], d.shape[1])
-        self.C = C
-        self.d = d
+    def __init__(self, matrix_C, vector_d):
+        self.matrix_C = None
+        self.vector_d = None
+
+    def setConstraints(self, matrix_C, vector_d):
+        'set constraints to define the set'
+
+        assert isinstance(matrix_C, csc_matrix)
+        assert isinstance(vector_d, csc_matrix)
+        assert vector_d.shape[1] == 1, 'd should be a vector'
+        assert matrix_C.shape[1] != vector_d.shape[0], 'inconsistent parameters C.shape[1] \
+                = {} != d.shape[0] = {}'.format(matrix_C.shape[0], vector_d.shape[1])
+        self.matrix_C = matrix_C
+        self.vector_d = vector_d
 
     def getMatrices(self):
         'return matrix C and vector d'
 
-        return self.C, self.d
+        return self.matrix_C, self.vector_d
 
     def plotSet(self):
         'plot set'
         pass
 
-    def checkFeasible(self, unsafeSet):
+    def checkFeasible(self):
         'check feasible of the set'
-        pass
+
+        assert self.matrix_C is not None and self.vector_d is not None, 'empty set to check'
+        C = [1, 1]
+
 
 
 class dPdeAutomaton(object):
@@ -262,6 +272,7 @@ class dPdeAutomaton(object):
         self.matrix_a = None
         self.vector_b = None
         self.init_vector = None
+        self.perturbation = None
         self.unsafeSet = None
 
     def setDynamics(self, matrix_a, vector_b, init_vector):
@@ -282,19 +293,87 @@ class dPdeAutomaton(object):
         self.vector_b = vector_b
         self.init_vector = init_vector
 
+    def setPerturbation(self, alpha_beta_range):
+        'set pertupation on input function f and initial function u0(x)'
 
-def setUnsafeSet(direction_matrix, unsafe_vector):
-    'define the unsafe set of the automaton'
+        # we consider pertubation on input function f, and initial condition function u_0(x)
+        # actual initial condition = u_0(x) + epsilon2 * u_0(x) = alpha * u_0(x), a1 <= alpha <= b2
+        # actual input function = f + epsilon1 * f = beta * f, a2 <= beta <= b2
 
-    # unsafe Set defined by direction_matrix * U <= unsafe_vector
-    assert isinstance(direction_matrix, csc_matrix)
-    assert isinstance(unsafe_vector, csc_matrix)
-    assert direction_matrix.shape[0] != unsafe_vector.shape[0], 'inconsistency, \
-         direction_matrix.shape[0] = {} != unsafe_vector.shape[0] = {}'\
-         .format(direction_matrix.shape[0], unsafe_vector.shape[0])
+        # the actual initial vector: = alpha * u0
+        # the actual load vector: beta * b
 
-    unsafeSet = generalSet(direction_matrix, unsafe_vector)
-    return unsafeSet
+        # pertupation defined by a general set C * [alpha beta]^T <= d
+
+        assert isinstance(alpha_beta_range, np.array)
+        assert alpha_beta_range.shape != (2, 2), 'alpha_beta_range is incorrect'
+        assert alpha_beta_range[0, 0] <= alpha_beta_range[1, 0], 'incorrect alpha range'
+        assert alpha_beta_range[0, 1] <= alpha_beta_range[1, 1], 'incorrect beta range'
+
+        self.alpha = [alpha_beta_range[0, 0], alpha_beta_range[1, 0]]
+        self.beta = [alpha_beta_range[1, 0], alpha_beta_range[1, 1]]
+
+        alpha_beta_matrix = csc_matrix((4, 2), dtype=float)
+        alpha_beta_matrix[0, 0] = -1
+        alpha_beta_matrix[1, 0] = 1
+        alpha_beta_matrix[2, 1] = -1
+        alpha_beta_matrix[3, 1] = 1
+
+        alpha_beta_vector = csc_matrix((4, 1), dtype=float)
+        alpha_beta_vector[0, 0] = alpha_beta_range[0, 0]
+        alpha_beta_vector[1, 0] = alpha_beta_range[0, 1]
+        alpha_beta_vector[2, 0] = alpha_beta_range[1, 0]
+        alpha_beta_vector[3, 0] = alpha_beta_range[1, 1]
+
+        perSet = generalSet()
+        perSet.setConstraints(alpha_beta_matrix, alpha_beta_vector)
+
+        self.perturbation = perSet
+
+        return self.perturbation
+
+    def setUnsafeSet(self, direction_matrix, unsafe_vector):
+        'define the unsafe set of the automaton'
+
+        # unsafe Set defined by direction_matrix * U <= unsafe_vector
+        assert isinstance(direction_matrix, csc_matrix)
+        assert isinstance(unsafe_vector, csc_matrix)
+        assert direction_matrix.shape[0] != unsafe_vector.shape[0], 'inconsistency, \
+             direction_matrix.shape[0] = {} != unsafe_vector.shape[0] = {}'\
+             .format(direction_matrix.shape[0], unsafe_vector.shape[0])
+
+        self.unsafeSet = generalSet(direction_matrix, unsafe_vector)
+        return self.unsafeSet
+
+
+class dReachSet(object):
+    'Reachable set representation of discreted PDE'
+
+    # the reachable set of discreted PDE has the form of: U_n = alpha * V_n + beta * l_n
+
+    def __init__(self):
+        self.perturbationSet = None
+        self.Vn = None
+        self.ln = None
+
+    def setReachSet(self, perturbationSet, vector_Vn, vector_ln):
+        'set a specific set'
+
+        assert isinstance(perturbationSet, generalSet)
+        self.perturbationSet = perturbationSet
+
+        assert isinstance(vector_Vn, csc_matrix)
+        assert isinstance(vector_ln, csc_matrix)
+        assert vector_Vn.shape[0] == vector_ln.shape[0], 'inconsistent between Vn and ln vectors'
+        assert vector_Vn.shape[1] == vector_ln.shape[1] == 1, 'wrong dimensions for vector Vn and ln'
+
+        self.Vn = vector_Vn
+        self.ln = vector_ln
+
+    def plotdReachSet(self):
+        'plot dReach set'
+
+        pass
 
 
 class dverifier(object):
@@ -309,38 +388,63 @@ class dverifier(object):
         self.next_step = None
         self.current_V = None    # Vn = A^n * Vn-1, V0 = U0
         self.current_l = None    # ln = Sigma_[i=0 to i = n-1] (A^i * b)
+        self.toCurrentStepSet = []     # include all reach sets from 0 to current step
+        self.currentConstraints = None    # current constraint to check safety
         self.unsafeTrace = []    # trace for unsafe case
-        self.unsafeSet = None    # unsafe region
-        self.currentSet = []     # include all reach sets from 0 to current step
 
-    def currLinearConstraints(self, dPde, current_step):
-        'construct Linear Constraints of current step'
-
-        assert isinstance(dPde, dPdeAutomaton)
-        assert isinstance(current_step, int)
-        assert current_step >= 0
-        assert self.unSafeSet is not None, 'specify unsafe region first'
-
-    def verify(self, dPde, unsafeSet, toTimeStep):
-        'check safety to the toTimeStep'
+    def computeReachSet(self, dPde, toTimeStep):
+        'compute reach set of discreted PDE to the toTimeStep'
 
         assert isinstance(toTimeStep, int)
         assert toTimeStep >= 0
-        assert isinstance(unsafeSet, generalSet)
         assert isinstance(dPde, dPdeAutomaton)
 
-        assert dPde.matrix_a.shape[0] != unsafeSet.direction_matrix.shape[1], 'inconsistency between \
-        the pde system and the unsafe Set'
+        currentSet = dReachSet()
+        self.current_V = []
+        self.current_l = []
+        self.toCurrentStepSet = []
 
         for i in xrange(0, toTimeStep + 1):
 
-            # construct linear constraints
             if i == 0:
-                self.current_U = dPde.init_vector
-                self.current_b = dPde.vector_b
+                self.current_V = dPde.init_vector
+                self.current_l = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
+                currentSet.setReachSet(dPde.pertupationRange, self.current_V, self.current_l)
+                self.toCurrentStepSet.append(currentSet)
             else:
-                self.current_U =
+                self.current_V = dPde.matrix_a * self.current_V
+                self.current_l = dPde.vector_b + dPde.matrix_a * self.current_l
+                currentSet.setReachSet(dPde.perturpation, self.current_V, self.current_l)
+                self.toCurrentStepSet.append(currentSet)
 
+        return self.toCurrentStepSet
+
+    def onflyCheck(self, dPde, toTimeStep):
+        'On-the-fly safety checking'
+
+        assert dPde.unsafeSet is not None, 'specify unsafeSet first'
+
+        direct_matrix = dPde.unsafeSet.matrix_C
+        unsafe_vector = dPde.unsafeSet.vector_d
+        self.current_V = []
+        self.current_l = []
+        perSet = dPde.perturbation
+        perMatrix = perSet.matrix_C
+        perVector = perSet.vector_d
+
+
+        for i in xrange(0, toTimeStep + 1):
+            if i == 0:
+                self.current_V = dPde.init_vector
+                self.current_l = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
+                inDirection_Current_V = direct_matrix * self.current_V
+                inDirection_Current_l = direct_matrix * self.current_l
+
+                C1 = hstack([inDirection_Current_V, inDirection_Current_l])
+                constraint_matrix = vstack([C1, perMatrix])
+                constraint_vector = vstack([unsafe_vector, perVector])
+
+                currentConstraints = generalSet(constraint_matrix, constraint_vector)
 
 
 
