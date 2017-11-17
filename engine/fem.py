@@ -11,6 +11,7 @@ from scipy.sparse import lil_matrix, csc_matrix, linalg
 from scipy.integrate import quad
 import numpy as np
 
+
 class Fem1D(object):
     'contains functions of finite element method for 1D PDEs'
 
@@ -18,14 +19,19 @@ class Fem1D(object):
     def mass_assembler(x):
         'compute mass matrix for 1D problem'
 
-        # x is list of discretized mesh points for example x = [0 , 0.1, 0.2, .., 0.9, 1]
+        # x is list of discretized mesh points for example x = [0 , 0.1, 0.2,
+        # .., 0.9, 1]
         assert isinstance(x, list)
         assert len(x) > 3, 'len(x) should >= 3'
 
         for i in xrange(0, len(x) - 2):
-            assert isinstance(x[i], float), 'x[{}] should be float type'.format(i)
-            assert isinstance(x[i + 1], float), 'x[{}] should be float type'.format(i + 1)
-            assert x[i + 1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i + 1], x[i])
+            assert isinstance(
+                x[i], float), 'x[{}] should be float type'.format(i)
+            assert isinstance(
+                x[i + 1], float), 'x[{}] should be float type'.format(i + 1)
+            assert x[i +
+                     1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i +
+                                                                               1], x[i])
 
         n = len(x) - 2    # number of discretized variables
         mass_matrix = lil_matrix((n, n), dtype=float)
@@ -48,14 +54,19 @@ class Fem1D(object):
     def stiff_assembler(x):
         'compute stiff matrix for 1D problem'
 
-        # x is list of discretized mesh points for example x = [0 , 0.1, 0.2, .., 0.9, 1]
+        # x is list of discretized mesh points for example x = [0 , 0.1, 0.2,
+        # .., 0.9, 1]
         assert isinstance(x, list)
         assert len(x) > 3, 'len(x) should >= 3'
 
         for i in xrange(0, len(x) - 2):
-            assert isinstance(x[i], float), 'x[{}] should be float type'.format(i)
-            assert isinstance(x[i + 1], float), 'x[{}] should be float type'.format(i + 1)
-            assert x[i + 1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i + 1], x[i])
+            assert isinstance(
+                x[i], float), 'x[{}] should be float type'.format(i)
+            assert isinstance(
+                x[i + 1], float), 'x[{}] should be float type'.format(i + 1)
+            assert x[i +
+                     1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i +
+                                                                               1], x[i])
 
         n = len(x) - 2    # number of discretized variables
         stiff_matrix = lil_matrix((n, n), dtype=float)
@@ -96,10 +107,12 @@ class Fem1D(object):
             if y < pc[0]:
                 return 0.0
             elif y >= pc[0] and y < pc[1]:
-                return (1 / (pc[1] - pc[0])) * (sum((a * y**(i + 1) for i, a in enumerate(fc))) - pc[0] * sum((a * y**i for i, a in enumerate(fc))))
+                return (1 / (pc[1] - pc[0])) * (sum((a * y**(i + 1) for i, a in enumerate(
+                    fc))) - pc[0] * sum((a * y**i for i, a in enumerate(fc))))
 
             elif y >= pc[1] and y < pc[2]:
-                return (1 / (pc[2] - pc[1])) * (-sum((a * y**(i + 1) for i, a in enumerate(fc))) + pc[2] * sum((a * y**i for i, a in enumerate(fc))))
+                return (1 / (pc[2] - pc[1])) * (-sum((a * y**(i + 1) for i, a in enumerate(
+                    fc))) + pc[2] * sum((a * y**i for i, a in enumerate(fc))))
 
             elif y >= pc[2]:
                 return 0.0
@@ -126,12 +139,17 @@ class Fem1D(object):
         assert len(x) > 3, 'len(x) should >= 3'
         assert len(fc) > 1, 'len(f) should >= 1'
         assert len(f_dom) == 2, 'len(f_domain) should be 2'
-        assert (x[0] <= f_dom[0]) and (f_dom[0] <= f_dom[1]) and (f_dom[1] <= x[len(x) - 1]), 'inconsistent domain'
+        assert (x[0] <= f_dom[0]) and (f_dom[0] <= f_dom[1]) and (
+            f_dom[1] <= x[len(x) - 1]), 'inconsistent domain'
 
         for i in xrange(0, len(x) - 2):
-            assert isinstance(x[i], float), 'x[{}] should be float type'.format(i)
-            assert isinstance(x[i + 1], float), 'x[{}] should be float type'.format(i + 1)
-            assert x[i + 1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i + 1], x[i])
+            assert isinstance(
+                x[i], float), 'x[{}] should be float type'.format(i)
+            assert isinstance(
+                x[i + 1], float), 'x[{}] should be float type'.format(i + 1)
+            assert x[i +
+                     1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i +
+                                                                               1], x[i])
 
         n = len(x) - 2    # number of discretized variables
 
@@ -160,18 +178,18 @@ class Fem1D(object):
         assert (time_step > 0), 'time step k = {} should be >= 0'.format(time_step)
 
         matrix_a = linalg.inv((mass_mat + stiff_mat.multiply(time_step / 2))) * \
-          (mass_mat - stiff_mat.multiply(time_step / 2))
+            (mass_mat - stiff_mat.multiply(time_step / 2))
         vector_b = linalg.inv(mass_mat + stiff_mat.multiply(time_step / 2)) * \
-          load_vec.multiply(time_step)
+            load_vec.multiply(time_step)
 
         return matrix_a, vector_b
-
 
     @staticmethod
     def u0x_func(x, c):
         'return u(x, 0) = u_0(x) initial function at t = 0'
 
-        # assumpe u_0(x) is a polynomial function defined by u_0(x) = c0 + c1 * x1 + ... + cn * x^n
+        # assumpe u_0(x) is a polynomial function defined by u_0(x) = c0 + c1 *
+        # x1 + ... + cn * x^n
 
         assert isinstance(c, list)
         assert len(c) >= 1, 'len(c) = {} should be >= 1'.format(len(c))
@@ -230,4 +248,5 @@ class Fem1D(object):
 
         assert isinstance(trace, list)
         n = len(trace)
-        assert n >= 2, 'trace should have at least two points, currently it has {} points'.format(n)
+        assert n >= 2, 'trace should have at least two points, currently it has {} points'.format(
+            n)

@@ -40,13 +40,16 @@ class DVerifier(object):
 
             if i == 0:
                 self.current_V = dPde.init_vector
-                self.current_l = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
-                current_set.set_reach_set(dPde.perturbation, self.current_V, self.current_l)
+                self.current_l = csc_matrix(
+                    (dPde.init_vector.shape[0], 1), dtype=float)
+                current_set.set_reach_set(
+                    dPde.perturbation, self.current_V, self.current_l)
                 self.to_current_step_set.append(current_set)
             else:
                 self.current_V = dPde.matrix_a * self.current_V
                 self.current_l = dPde.vector_b + dPde.matrix_a * self.current_l
-                current_set.set_reach_set(dPde.perturbation, self.current_V, self.current_l)
+                current_set.set_reach_set(
+                    dPde.perturbation, self.current_V, self.current_l)
                 self.to_current_step_set.append(current_set)
 
         return self.to_current_step_set
@@ -64,11 +67,11 @@ class DVerifier(object):
         per_matrix = per_set.matrix_c
         per_vector = per_set.vector_d
 
-
         for i in xrange(0, toTimeStep + 1):
             if i == 0:
                 self.current_V = dPde.init_vector
-                self.current_l = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
+                self.current_l = csc_matrix(
+                    (dPde.init_vector.shape[0], 1), dtype=float)
                 inDirection_Current_V = direct_matrix * self.current_V
                 inDirection_Current_l = direct_matrix * self.current_l
 
@@ -77,6 +80,7 @@ class DVerifier(object):
                 constraint_vector = vstack([unsafe_vector, per_vector])
 
                 current_constraints = GeneralSet()
-                current_constraints.set_constraints(constraint_matrix, constraint_vector)
+                current_constraints.set_constraints(
+                    constraint_matrix, constraint_vector)
 
                 # check feasible

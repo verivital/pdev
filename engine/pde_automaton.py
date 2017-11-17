@@ -3,9 +3,10 @@ This module implements continuous/ discreted pde automaton classes and its metho
 Dung Tran: Nov/2017
 '''
 
-from scipy.sparse import csc_matrix
+from scipy.sparse import csc_matrix, lil_matrix
 import numpy as np
 from engine.set import GeneralSet
+
 
 class DPdeAutomaton(object):
     'discreted Pde automaton'
@@ -26,7 +27,8 @@ class DPdeAutomaton(object):
         assert isinstance(vector_b, csc_matrix)
         assert matrix_a.shape[0] == vector_b.shape[0], 'inconsistency between shapes of matrix_a and \
         vector_b'
-        assert vector_b.shape[1] == 1, 'vector_b shape = {} # 1'.format(vector_b.shape[1])
+        assert vector_b.shape[1] == 1, 'vector_b shape = {} # 1'.format(
+            vector_b.shape[1])
 
         assert isinstance(init_vector, csc_matrix)
         assert matrix_a.shape[0] == init_vector.shape[0], 'matrix_a and init_vector are inconsistent'
@@ -49,9 +51,12 @@ class DPdeAutomaton(object):
         # pertupation defined by a general set C * [alpha beta]^T <= d
 
         assert isinstance(alpha_beta_range, np.ndarray)
-        assert alpha_beta_range.shape == (2, 2), 'alpha_beta_range shape is incorrect'
-        assert alpha_beta_range[0, 0] <= alpha_beta_range[1, 0], 'incorrect alpha range'
-        assert alpha_beta_range[0, 1] <= alpha_beta_range[1, 1], 'incorrect beta range'
+        assert alpha_beta_range.shape == (
+            2, 2), 'alpha_beta_range shape is incorrect'
+        assert alpha_beta_range[0, 0] <= alpha_beta_range[1,
+                                                          0], 'incorrect alpha range'
+        assert alpha_beta_range[0, 1] <= alpha_beta_range[1,
+                                                          1], 'incorrect beta range'
 
         alpha_beta_matrix = lil_matrix((4, 2), dtype=float)
         alpha_beta_matrix[0, 0] = -1
@@ -66,7 +71,9 @@ class DPdeAutomaton(object):
         alpha_beta_vector[3, 0] = alpha_beta_range[1, 1]
 
         per_set = GeneralSet()
-        per_set.set_constraints(alpha_beta_matrix.tocsc(), alpha_beta_vector.tocsc())
+        per_set.set_constraints(
+            alpha_beta_matrix.tocsc(),
+            alpha_beta_vector.tocsc())
 
         self.perturbation = per_set
 

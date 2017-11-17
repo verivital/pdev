@@ -5,6 +5,7 @@ Dung Tran: Nov/2017
 
 from scipy.sparse import csc_matrix
 
+
 class GeneralSet(object):
     'representation of a set of the form C * x <= d'
 
@@ -44,7 +45,8 @@ class GeneralSet(object):
 class DReachSet(object):
     'Reachable set representation of discreted PDE'
 
-    # the reachable set of discreted PDE has the form of: U_n = alpha * V_n + beta * l_n
+    # the reachable set of discreted PDE has the form of: U_n = alpha * V_n +
+    # beta * l_n
 
     def __init__(self):
 
