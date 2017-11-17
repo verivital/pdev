@@ -48,7 +48,8 @@ if __name__ == '__main__':
     dPde = DPdeAutomaton()
     dPde.set_dynamics(A, b, u0)    # set dynamic of discreted PDE
     alpha_beta_range = np.array([[0, 1], [1, 1]])    # set perturbation range
-    dPde.set_perturbation(alpha_beta_range)
+    perturbation = dPde.set_perturbation(alpha_beta_range)
+    perturbation.check_feasible()
 
     ########################################################
     # test Dverifier class

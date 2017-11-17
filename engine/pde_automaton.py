@@ -85,7 +85,7 @@ class DPdeAutomaton(object):
         # unsafe Set defined by direction_matrix * U <= unsafe_vector
         assert isinstance(direction_matrix, csc_matrix)
         assert isinstance(unsafe_vector, csc_matrix)
-        assert direction_matrix.shape[0] != unsafe_vector.shape[0], 'inconsistency, \
+        assert direction_matrix.shape[0] == unsafe_vector.shape[0], 'inconsistency, \
              direction_matrix.shape[0] = {} != unsafe_vector.shape[0] = {}'\
              .format(direction_matrix.shape[0], unsafe_vector.shape[0])
 

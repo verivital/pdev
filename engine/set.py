@@ -4,6 +4,7 @@ Dung Tran: Nov/2017
 '''
 
 from scipy.sparse import csc_matrix
+from scipy.optimize import linprog
 
 
 class GeneralSet(object):
@@ -39,7 +40,12 @@ class GeneralSet(object):
         'check feasible of the set'
 
         assert self.matrix_c is not None and self.vector_d is not None, 'empty set to check'
-        C = [1, 1]
+        min_vector = [1, 1]
+        alpha_bounds = (None, None)
+        beta_bounds = (None, None)
+        res = linprog(min_vector, A_ub=self.matrix_c.todense(), b_ub=self.vector_d.todense(), bounds=(alpha_bounds, beta_bounds), options={"disp": True})
+
+        return res
 
 
 class DReachSet(object):
