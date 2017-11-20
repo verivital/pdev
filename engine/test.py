@@ -9,7 +9,7 @@ import numpy as np
 from engine.fem import Fem1D
 from engine.pde_automaton import DPdeAutomaton
 from engine.verifier import DVerifier
-
+from engine.set import plot_boxes, RectangleSet
 
 if __name__ == '__main__':
 
@@ -72,3 +72,18 @@ if __name__ == '__main__':
         unsafe_vector.tocsc())    # set unsafe set
     print"\nSafety of discreted Pde:"
     verifier.on_fly_check(dPde, 10)
+
+    #########################################################
+    # test plot class
+
+    rectangle_set_list = []
+    for i in xrange(0, 3):
+        xmin = float(i)
+        ymin = float(i)
+        xmax = float(i + 2)
+        ymax = float(i + 2)
+        rect = RectangleSet()
+        rect.set_bounds(xmin, xmax, ymin, ymax)
+        rectangle_set_list.append(rect)
+
+    plot_boxes(rectangle_set_list, facecolor='r', edgecolor='g')

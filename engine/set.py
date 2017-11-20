@@ -1,10 +1,14 @@
 '''
-This module implements general set class and its basic methods
+This module implements general set class and DReachSet class and their methods
 Dung Tran: Nov/2017
 '''
 
 from scipy.sparse import lil_matrix, csc_matrix, eye, vstack, hstack
 from scipy.optimize import linprog
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
 
 
 class GeneralSet(object):
@@ -32,10 +36,6 @@ class GeneralSet(object):
 
         return self.matrix_c, self.vector_d
 
-    def plot_set(self):
-        'plot set'
-        pass
-
     def check_feasible(self):
         'check feasible of the set'
 
@@ -57,6 +57,34 @@ class GeneralSet(object):
                 "disp": False})
 
         return res
+
+
+class RectangleSet(object):
+    'Rectangle Set'
+
+    def __init__(self):
+        self.xmin = None
+        self.xmax = None
+        self.ymin = None
+        self.ymax = None
+
+    def set_bounds(self, xmin, xmax, ymin, ymax):
+        'specify a rectangle'
+
+        assert isinstance(xmin, float)
+        assert isinstance(xmax, float)
+        assert isinstance(ymin, float)
+        assert isinstance(ymax, float)
+
+        assert xmin < xmax, 'invalid set, xmin = {} is not < than xmax = {}'.format(
+            xmin, xmax)
+        assert ymin < ymax, 'invalid set, ymin = {} is not < than ymax = {}'.format(
+            ymin, ymax)
+
+        self.xmin = xmin
+        self.xmax = xmax
+        self.ymin = ymin
+        self.ymax = ymax
 
 
 class DReachSet(object):
@@ -149,3 +177,24 @@ class DReachSet(object):
                 print"\nInfeasible or Error when computing max range"
 
         return min_range, max_range
+
+
+def plot_boxes(rectangle_set_list, facecolor, edgecolor):
+    'plot reachable set using rectangle boxes'
+
+    n = len(rectangle_set_list)
+    assert n > 0, 'empty set'
+
+    boxes = []
+    for i in xrange(0, n):
+        assert isinstance(rectangle_set_list[i], RectangleSet)
+        rect = rectangle_set_list[i]
+        rect_patch = Rectangle(
+            (rect.xmin, rect.ymin), rect.xmax - rect.xmin, rect.ymax - rect.ymin, fill=True)
+        boxes.append(rect_patch)
+        fig = plt.figure()
+        ax = fig.add_subplot(111, aspect='equal')
+        print "\ni={}-> lower_lelf = ({}, {}), width = {}, height = {}".format(i, rect.xmin, rect.ymin, rect.xmax - rect.xmin, rect.ymax - rect.ymin)
+        ax.add_patch(Rectangle((rect.xmin, rect.ymin), rect.xmax - rect.xmin, rect.ymax - rect.ymin, fill=True))
+        fig.savefig('rect_{}.png'.format(i))
+        plt.show()

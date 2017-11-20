@@ -56,7 +56,11 @@ class DVerifier(object):
     def plot_reach_set(self, direction_matrix):
         'plot reachable set in a specific direction'
 
-        pass
+        assert self.to_current_step_set == [], 'reach set is empty, call compute_reach_set first'
+        n = len(self.to_current_step_set)
+        xmin = []
+        xmax = []
+
 
     def on_fly_check(self, dPde, toTimeStep):
         'On-the-fly safety checking'
