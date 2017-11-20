@@ -17,7 +17,6 @@ class DVerifier(object):
     def __init__(self):
 
         self.status = None    # 0=safe /1=unsafe
-        self.next_step = None
         self.current_V = None    # Vn = A^n * Vn-1, V0 = U0
         self.current_l = None    # ln = Sigma_[i=0 to i = n-1] (A^i * b)
         self.to_current_step_set = []     # include all reach sets from 0 to current step
@@ -25,7 +24,7 @@ class DVerifier(object):
         self.unsafe_trace = []    # trace for unsafe case
 
     def compute_reach_set(self, dPde, toTimeStep):
-        'compute reach set of discreted PDE to the toTimeStep'
+        'compute reach set of discreted PDE to the toTimeStep in specific direction'
 
         assert isinstance(toTimeStep, int)
         assert toTimeStep >= 0
@@ -54,9 +53,15 @@ class DVerifier(object):
 
         return self.to_current_step_set
 
+    def plot_reach_set(self, direction_matrix):
+        'plot reachable set in a specific direction'
+
+        pass
+
     def on_fly_check(self, dPde, toTimeStep):
         'On-the-fly safety checking'
 
+        assert dPde.matrix_a is not None, 'specify dPde first'
         assert dPde.unsafe_set is not None, 'specify unsafe set first'
 
         direct_matrix = dPde.unsafe_set.matrix_c

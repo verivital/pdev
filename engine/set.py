@@ -3,7 +3,7 @@ This module implements general set class and its basic methods
 Dung Tran: Nov/2017
 '''
 
-from scipy.sparse import csc_matrix
+from scipy.sparse import lil_matrix, csc_matrix, eye, vstack, hstack
 from scipy.optimize import linprog
 
 
@@ -46,7 +46,15 @@ class GeneralSet(object):
         min_vector = [1, 1]
         alpha_bounds = (None, None)
         beta_bounds = (None, None)
-        res = linprog(min_vector, A_ub=self.matrix_c.todense(), b_ub=self.vector_d.todense(), bounds=(alpha_bounds, beta_bounds), options={"disp": False})
+        res = linprog(
+            min_vector,
+            A_ub=self.matrix_c.todense(),
+            b_ub=self.vector_d.todense(),
+            bounds=(
+                alpha_bounds,
+                beta_bounds),
+            options={
+                "disp": False})
 
         return res
 
@@ -77,7 +85,67 @@ class DReachSet(object):
         self.Vn = vector_Vn
         self.ln = vector_ln
 
-    def plotdReachSet(self):
-        'plot dReach set'
+    def range_reach_set(self, direction_matrix):
+        'compute range of reach set in a specific direction, i.e.,  x_min[i] <= x[i] <= x_max[i]'
 
-        pass
+        if self.Vn is None and self.ln is None:
+            raise ValueError('empty set')
+        elif self.perturbation is None:
+            raise ValueError('specify perturbation to plot Reachable Set')
+
+        assert isinstance(direction_matrix, csc_matrix)
+        assert direction_matrix.shape[1] == self.Vn.shape[0] == self.ln.shape[0], 'inconsistency between \
+            direction matrix and vector Vn and vector ln'
+
+        inDirection_vector_Vn = direction_matrix * self.Vn
+        inDirection_vector_ln = direction_matrix * self.ln
+
+        num_var = direction_matrix.shape[0]
+        indentity_mat = eye(num_var, dtype=float)
+        Aeq_mat = hstack(
+            [inDirection_vector_Vn, inDirection_vector_ln, -indentity_mat])
+        Beq_mat = csc_matrix((num_var + 2, 1), dtype=float)
+
+        matrix_c = self.perturbation.matrix_c
+        vector_d = self.perturbation.vector_d
+        zero_mat = csc_matrix((num_var, num_var), dtype=float)
+        zero_vec = csc_matrix((num_var, 1), dtype=float)
+        Aub_mat = hstack([matrix_c, zero_mat])
+        Bub_mat = vstack([vector_d, zero_vec])
+
+        min_range = []    # = [xmin[1], xmin[2], ...xmin[num_var]]
+        max_range = []    # = [xmax[1], xmax[2], ...xmax[num_var]]
+
+        # compute min range
+        for i in xrange(0, num_var):
+            vector_c = lil_matrix((1, num_var + 2), dtype=float)
+            vector_c[0, i + 2] = 1
+            res = linprog(
+                vector_c.todense(),
+                A_ub=Aub_mat.todense(),
+                b_ub=Bub_mat.todense(),
+                A_eq=Aeq_mat.todense(),
+                b_eq=Beq_mat.todense())
+
+            if res.status == 0:
+                min_range.append(res.fun)
+            else:
+                print"\nInfeasible or Error when computing min range"
+
+        # compute max range
+        for i in xrange(0, num_var):
+            vector_c = lil_matrix((1, num_var + 2), dtype=float)
+            vector_c[0, i + 2] = -1
+            res = linprog(
+                vector_c.todense(),
+                A_ub=Aub_mat.todense(),
+                b_ub=Bub_mat.todense(),
+                A_eq=Aeq_mat.todense(),
+                b_eq=Beq_mat.todense())
+
+            if res.status == 0:
+                max_range.append(-res.fun)
+            else:
+                print"\nInfeasible or Error when computing max range"
+
+        return min_range, max_range
