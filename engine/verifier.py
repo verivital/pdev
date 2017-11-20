@@ -16,7 +16,7 @@ class DVerifier(object):
 
     def __init__(self):
 
-        self.status = None    # safe / unsafe
+        self.status = None    # 0=safe /1=unsafe
         self.next_step = None
         self.current_V = None    # Vn = A^n * Vn-1, V0 = U0
         self.current_l = None    # ln = Sigma_[i=0 to i = n-1] (A^i * b)
@@ -67,6 +67,9 @@ class DVerifier(object):
         per_matrix = per_set.matrix_c
         per_vector = per_set.vector_d
 
+        constraint_vector = vstack([unsafe_vector, per_vector])
+        current_constraints = GeneralSet()
+
         for i in xrange(0, toTimeStep + 1):
             if i == 0:
                 self.current_V = dPde.init_vector
@@ -76,11 +79,39 @@ class DVerifier(object):
                 inDirection_Current_l = direct_matrix * self.current_l
 
                 C1 = hstack([inDirection_Current_V, inDirection_Current_l])
+                constraint_matrix = vstack([C1, per_matrix])    # construct constrains for current step
+
+            else:
+                self.current_V = dPde.matrix_a * self.current_V
+                self.current_l = dPde.vector_b + dPde.matrix_a * self.current_l
+
+                inDirection_Current_V = direct_matrix * self.current_V
+                inDirection_Current_l = direct_matrix * self.current_l
+                C1 = hstack([inDirection_Current_V, inDirection_Current_l])
                 constraint_matrix = vstack([C1, per_matrix])
-                constraint_vector = vstack([unsafe_vector, per_vector])
 
-                current_constraints = GeneralSet()
-                current_constraints.set_constraints(
-                    constraint_matrix, constraint_vector)
+            current_constraints.set_constraints(
+                constraint_matrix.tocsc(), constraint_vector.tocsc())    # construct constraints for current step
 
-                # check feasible
+            # check feasible of current constraint
+            feasible_res = current_constraints.check_feasible()
+            if feasible_res.status == 2:
+                self.status = 0    # discreted pde system is safe
+            elif feasible_res.status == 0:
+                self.status = 1    # discreted pde system is unsafe
+            elif feasible_res == 1:
+                self.status = 2    # iteration limit reached
+            elif feasible_res == 3:
+                self.status = 3    # problem appears to be unbounded
+
+            if self.status == 0:
+                print"\nTimeStep {}: SAFE".format(i)
+            elif self.status == 1:
+                print"\nTimeStep {}: UNSAFE".format(i)
+                feasible_alpha = feasible_res.x[0, 0]
+                feasible_beta = feasible_res.x[0, 1]
+                vector_u0 = dPde.init_vector.multiply(feasible_alpha)
+                vector_b0 = dPde.vector_b.multiply(feasible_beta)
+                self.unsafe_trace = dPde.get_trace(vector_b0, vector_u0, i)    # produce a trace lead dPde to unsafe region
+            else:
+                print"\nTimeStep{}: Error in checking safe/unsafe"

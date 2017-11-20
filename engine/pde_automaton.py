@@ -15,11 +15,12 @@ class DPdeAutomaton(object):
 
         self.matrix_a = None
         self.vector_b = None
+        self.time_step = None
         self.init_vector = None
         self.perturbation = None
         self.unsafe_set = None
 
-    def set_dynamics(self, matrix_a, vector_b, init_vector):
+    def set_dynamics(self, matrix_a, vector_b, init_vector, time_step):
         'set dynamic of discreted pde automaton'
 
         assert isinstance(matrix_a, csc_matrix)
@@ -34,8 +35,11 @@ class DPdeAutomaton(object):
         assert matrix_a.shape[0] == init_vector.shape[0], 'matrix_a and init_vector are inconsistent'
         assert init_vector.shape[1] == 1
 
+        assert (time_step > 0), 'time step k = {} should be >= 0'.format(time_step)
+
         self.matrix_a = matrix_a
         self.vector_b = vector_b
+        self.time_step = time_step
         self.init_vector = init_vector
 
     def set_perturbation(self, alpha_beta_range):
@@ -93,3 +97,30 @@ class DPdeAutomaton(object):
         self.unsafe_set.set_constraints(direction_matrix, unsafe_vector)
 
         return self.unsafe_set
+
+    def get_trace(self, vector_b0, vector_u0, num_steps):
+        'produce a trace of the discreted ODE model corresponding to initial vector vector_u0'
+
+        assert self.matrix_a is not None, 'empty dPde'
+        assert self.matrix_a.shape[0] == vector_b0.shape[0] == vector_u0.shape[0], 'inconsistency between \
+            matrix_a and vector_b0 and vector_u0'
+
+        assert vector_b0.shape[1] == 1 and vector_u0.shape[1] == 1, 'wrong shapes for vector_b0 or vector_u0'
+
+        u_list = []
+        times = np.linspace(0, self.time_step * num_steps, num_steps + 1)
+
+        n = len(times)
+
+        for i in xrange(0, n):
+            print "\ni={}".format(i)
+            if i == 0:
+                u_list.append(vector_u0)
+            else:
+                u_n_minus_1 = u_list[i - 1]
+                u_n = self.matrix_a * u_n_minus_1 + vector_b0
+                u_list.append(u_n)
+
+            print "\n t = {} -> \n U =: \n{}".format(i * self.time_step, u_list[i].todense())
+
+        return u_list

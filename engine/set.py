@@ -39,11 +39,14 @@ class GeneralSet(object):
     def check_feasible(self):
         'check feasible of the set'
 
+        # todo: implements check feasible using glpk package for large sparse constraints
+        # another option can be using commercial Gurobi solver
+
         assert self.matrix_c is not None and self.vector_d is not None, 'empty set to check'
         min_vector = [1, 1]
         alpha_bounds = (None, None)
         beta_bounds = (None, None)
-        res = linprog(min_vector, A_ub=self.matrix_c.todense(), b_ub=self.vector_d.todense(), bounds=(alpha_bounds, beta_bounds), options={"disp": True})
+        res = linprog(min_vector, A_ub=self.matrix_c.todense(), b_ub=self.vector_d.todense(), bounds=(alpha_bounds, beta_bounds), options={"disp": False})
 
         return res
 
