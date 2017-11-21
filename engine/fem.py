@@ -33,14 +33,20 @@ class Fem1D(object):
                      1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i +
                                                                                1], x[i])
 
-        n = len(x) - 2    # number of discretized variables
+        n = len(x)    # number of discretized variables
         mass_matrix = lil_matrix((n, n), dtype=float)
 
         # filling mass_matrix
 
         for i in xrange(0, n):
-            hi = x[i + 1] - x[i]
-            hi_plus_1 = x[i + 2] - x[i + 1]
+            if i == 0:
+                hi = 0
+            else:
+                hi = x[i] - x[i - 1]
+            if i + 1 > n - 1:
+                hi_plus_1 = 0
+            else:
+                hi_plus_1 = x[i + 1] - x[i]
 
             mass_matrix[i, i] = hi / 3 + hi_plus_1 / 3
             if i + 1 <= n - 1:
@@ -68,16 +74,29 @@ class Fem1D(object):
                      1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i +
                                                                                1], x[i])
 
-        n = len(x) - 2    # number of discretized variables
+        n = len(x)    # number of discretized variables
         stiff_matrix = lil_matrix((n, n), dtype=float)
 
         # filling stiff_matrix
 
         for i in xrange(0, n):
-            hi = x[i + 1] - x[i]
-            hi_plus_1 = x[i + 2] - x[i + 1]
 
-            stiff_matrix[i, i] = 1 / hi + 1 / hi_plus_1
+            if i > 0:
+                hi = x[i] - x[i - 1]
+            else:
+                hi = 0
+            if i + 1 <= n - 1:
+                hi_plus_1 = x[i + 1] - x[i]
+            else:
+                hi_plus_1 = 0
+
+            if i == 0:
+                stiff_matrix[i, i] = 1 / hi_plus_1
+            elif i == n - 1:
+                stiff_matrix[i, i] = 1 / hi
+            elif 0 < i < n - 1:
+                stiff_matrix[i, i] = 1 / hi + 1 / hi_plus_1
+
             if i + 1 <= n - 1:
                 stiff_matrix[i, i + 1] = -1 / hi_plus_1
             if i - 1 >= 0:
@@ -91,6 +110,8 @@ class Fem1D(object):
 
         # assume f is polynomial function f = c0 + c1*y + c2*y^2 + ... + cm * y^m
         # phi is hat function defined on pc = [pc[0], pc[1], pc[2]]
+        # at left boundary pc[0] = pc[1] = 0
+        # at right boudary pc[1] = pc[2] = ?
 
         # todo: add more general function f which depends on t and x. using np.dblquad to calculate
         # double integration
@@ -99,23 +120,31 @@ class Fem1D(object):
         assert isinstance(pc, list)
         assert len(pc) == 3, 'len(pc) = {} != 3'.format(len(pc))
         for i in xrange(0, len(pc) - 1):
-            assert pc[i] >= 0 and pc[i] < pc[i + 1], 'pc[{}] = {} should be larger than 0 and \
-                smaller than pc[{}] = {}'.format(i, pc[i], i + 1, pc[i + 1])
+            assert pc[i] >= 0 and pc[i] <= pc[i + 1], 'pc[{}] = {} should be >= 0 and \
+                <= pc[{}] = {}'.format(i, pc[i], i + 1, pc[i + 1])
 
         def func(y):
             'piecewise function'
-            if y < pc[0]:
-                return 0.0
-            elif y >= pc[0] and y < pc[1]:
-                return (1 / (pc[1] - pc[0])) * (sum((a * y**(i + 1) for i, a in enumerate(
-                    fc))) - pc[0] * sum((a * y**i for i, a in enumerate(fc))))
 
-            elif y >= pc[1] and y < pc[2]:
+            if pc[0] == pc[1]:    # left boundary phi_0
                 return (1 / (pc[2] - pc[1])) * (-sum((a * y**(i + 1) for i, a in enumerate(
                     fc))) + pc[2] * sum((a * y**i for i, a in enumerate(fc))))
+            elif pc[1] == pc[2]:    # right boundary phi_m
+                return (1 / (pc[1] - pc[0])) * (sum((a * y**(i + 1) for i, a in enumerate(
+                    fc))) - pc[0] * sum((a * y**i for i, a in enumerate(fc))))
+            elif pc[0] < pc[1] < pc[2]:
+                if y < pc[0]:
+                    return 0.0
+                elif y >= pc[0] and y < pc[1]:
+                    return (1 / (pc[1] - pc[0])) * (sum((a * y**(i + 1) for i, a in enumerate(
+                        fc))) - pc[0] * sum((a * y**i for i, a in enumerate(fc))))
 
-            elif y >= pc[2]:
-                return 0.0
+                elif y >= pc[1] and y < pc[2]:
+                    return (1 / (pc[2] - pc[1])) * (-sum((a * y**(i + 1) for i, a in enumerate(
+                        fc))) + pc[2] * sum((a * y**i for i, a in enumerate(fc))))
+
+                elif y >= pc[2]:
+                    return 0.0
 
         return np.vectorize(func)
 
@@ -151,14 +180,19 @@ class Fem1D(object):
                      1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i +
                                                                                1], x[i])
 
-        n = len(x) - 2    # number of discretized variables
+        n = len(x)    # number of discretized variables
 
         b = lil_matrix((n, 1), dtype=float)
 
         y = []
 
         for i in xrange(0, n):
-            pc = [x[i], x[i + 1], x[i + 2]]
+            if i == 0:
+                pc = [x[0], x[0], x[1]]
+            elif i == n - 1:
+                pc = [x[i - 1], x[i], x[i]]
+            elif 0 < i < n - 1:
+                pc = [x[i - 1], x[i], x[i + 1]]
             fphi = Fem1D.f_mul_phi(y, fc, pc)
             I = quad(fphi, f_dom[0], f_dom[1])
             b[i, 0] = I[0]
@@ -210,11 +244,11 @@ class Fem1D(object):
         assert isinstance(x, list)
         assert len(x) >= 3, 'len(x) = {} should be >= 3'.format(len(x))
 
-        n = len(x) - 2
+        n = len(x)
         u0 = lil_matrix((n, 1), dtype=float)
 
         for i in xrange(0, n):
-            v = x[i + 1]
+            v = x[i]
             u0[i, 0] = u0x_func(v)
 
         return u0.tocsc()

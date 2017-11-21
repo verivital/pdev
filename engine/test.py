@@ -91,7 +91,7 @@ if __name__ == '__main__':
     ax = fig.add_subplot(111)
     pl = Plot()
     ax = pl.plot_boxes(ax, rectangle_set_list, facecolor='b', edgecolor='None')
-    plt.show()
+    plt.show()    # plot boxes
 
     tlist = [1, 2, 3]
     xmin = [0.2, 0.4, 0.5]
@@ -101,4 +101,4 @@ if __name__ == '__main__':
     ax1 = fig1.add_subplot(111)
     pl1 = Plot()
     ax1 = pl.plot_vlines(ax1, tlist, xmin, xmax, colors='b', linestyles='solid')
-    plt.show()
+    plt.show()    # plot vlines

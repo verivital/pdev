@@ -260,3 +260,10 @@ class Plot(object):
         ax.set_ylim(ymin - 0.1 * abs(ymin), ymax + 0.1 * abs(ymax))
 
         return ax
+
+    @staticmethod
+    def plot_interpolation_in_space(ux_list, x_list):
+        'plot interpolation set in each segment of x, i.e. u(x) where x[i] <= x <= x[i + 1]'
+
+        # we know a1 < = u(x[i]) <= b1 and a2 <= u(x[i + 1]) <= b2
+        # The set between x[i] and x[i + 1] is a linear interpolation of u(x[i]) and u(x[i + 1])
