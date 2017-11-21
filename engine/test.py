@@ -9,7 +9,8 @@ import numpy as np
 from engine.fem import Fem1D
 from engine.pde_automaton import DPdeAutomaton
 from engine.verifier import DVerifier
-from engine.set import Plot, RectangleSet
+from engine.set import RectangleSet
+from engine.plot import Plot
 import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
