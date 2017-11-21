@@ -9,7 +9,8 @@ import numpy as np
 from engine.fem import Fem1D
 from engine.pde_automaton import DPdeAutomaton
 from engine.verifier import DVerifier
-from engine.set import plot_boxes, RectangleSet
+from engine.set import Plot, RectangleSet
+import matplotlib.pyplot as plt
 
 if __name__ == '__main__':
 
@@ -86,4 +87,18 @@ if __name__ == '__main__':
         rect.set_bounds(xmin, xmax, ymin, ymax)
         rectangle_set_list.append(rect)
 
-    plot_boxes(rectangle_set_list, facecolor='r', edgecolor='g')
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    pl = Plot()
+    ax = pl.plot_boxes(ax, rectangle_set_list, facecolor='b', edgecolor='None')
+    plt.show()
+
+    tlist = [1, 2, 3]
+    xmin = [0.2, 0.4, 0.5]
+    xmax = [0.6, 1, 1.2]
+
+    fig1 = plt.figure()
+    ax1 = fig1.add_subplot(111)
+    pl1 = Plot()
+    ax1 = pl.plot_vlines(ax1, tlist, xmin, xmax, colors='b', linestyles='solid')
+    plt.show()
