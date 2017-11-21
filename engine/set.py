@@ -195,6 +195,14 @@ def plot_boxes(rectangle_set_list, facecolor, edgecolor):
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
         print "\ni={}-> lower_lelf = ({}, {}), width = {}, height = {}".format(i, rect.xmin, rect.ymin, rect.xmax - rect.xmin, rect.ymax - rect.ymin)
-        ax.add_patch(Rectangle((rect.xmin, rect.ymin), rect.xmax - rect.xmin, rect.ymax - rect.ymin, fill=True))
+        ax.add_patch(
+            Rectangle(
+                (rect.xmin,
+                 rect.ymin),
+                rect.xmax -
+                rect.xmin,
+                rect.ymax -
+                rect.ymin,
+                fill=True))
         fig.savefig('rect_{}.png'.format(i))
         plt.show()
