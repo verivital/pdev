@@ -98,3 +98,5 @@ class Interpolation(object):
     @staticmethod
     def interpolate_in_time(xlist, reach_set):
         'linear interpolation in time'
+
+        pass
