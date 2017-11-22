@@ -4,6 +4,7 @@ Dung Tran: Nov/2017
 '''
 
 import math
+import matplotlib.pyplot as plt
 from scipy.sparse import lil_matrix
 import numpy as np
 from engine.fem import Fem1D
@@ -11,7 +12,8 @@ from engine.pde_automaton import DPdeAutomaton
 from engine.verifier import DVerifier
 from engine.set import RectangleSet
 from engine.plot import Plot
-import matplotlib.pyplot as plt
+from engine.interpolation import Interpolation
+
 
 if __name__ == '__main__':
 
@@ -96,10 +98,36 @@ if __name__ == '__main__':
 
     tlist = [1, 2, 3]
     xmin = [0.2, 0.4, 0.5]
-    xmax = [0.6, 1, 1.2]
+    xmax = [0.6, 1.0, 1.2]
 
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111)
     pl1 = Plot()
-    ax1 = pl.plot_vlines(ax1, tlist, xmin, xmax, colors='b', linestyles='solid')
+    ax1 = pl.plot_vlines(
+        ax1,
+        tlist,
+        xmin,
+        xmax,
+        colors='b',
+        linestyles='solid')
     plt.show()    # plot vlines
+
+    ############################################################
+    # test interpolation class
+    Vn = lil_matrix((3, 1), dtype=float)
+    ln = lil_matrix((3, 1), dtype=float)
+    Vn[0, 0] = 0.1
+    Vn[1, 0] = 0.2
+    Vn[2, 0] = 0.3
+    ln[0, 0] = 0.2
+    ln[1, 0] = 0.2
+    ln[2, 0] = 0.5
+
+    xlist = [0, 0.5, 1]
+    intpl = Interpolation()
+    intpl_set = intpl.interpolate_in_space(xlist, Vn.tocsc(), ln.tocsc())
+    print "\ninterpolation set (in space):"
+    print "\na1 = {}, \nb1 = {}, \na2 = {}, \nb2 = {}".format(intpl_set.a1_current_step_list, \
+                                                                  intpl_set.b1_current_step_list,\
+                                                                  intpl_set.a2_current_step_list, \
+                                                                  intpl_set.b2_current_step_list)
