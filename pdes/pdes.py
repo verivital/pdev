@@ -368,16 +368,16 @@ class HeatThreeDimension(object):
         return self.diffusity_const * (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
 
 class FirstOrderWaveEqOneDimension1(object):
-	"""Generate ODEs from 1-d wave equation"""
+    """Generate ODEs from 1-d wave equation"""
 
     # This benchmark is from the book: "Numerical Partial Differential Equations:
     # finite difference method"
-    # J. W. Thomas, Springer
-	
-	# we consider Dirichlet Boundary Condition at x = 0, u = 0.5. use backward space discretization difference scheme
-    def __init__(self, speed_const, len_x):# x = 0 is not included
+    # J. W. Thomas, Springer	
+    # we consider Dirichlet Boundary Condition at x = 0, u = 0.5. use backward space discretization difference scheme
 
-        self.speed_const = speed_const if speed_const > 0 else 0  # speed_const
+    def __init__(self, speed_const, len_x):
+
+	self.speed_const = speed_const if speed_const < 0 else 0  # speed_const be negative to ensure FTBS is correct for positive wave speed
         self.len_x = len_x if len_x > 0 else 0    # length along x-axis
         if self.speed_const == 0 or self.len_x == 0:
             raise ValueError('inappropriate parameters')
@@ -410,21 +410,20 @@ class FirstOrderWaveEqOneDimension1(object):
             if (i - 1 >= 0):
                 matrix_a[i, i - 1] = -a
 				
-		matrix_b[0, 0] = - a * 1/2
+		#matrix_b[0, 0] = - a * 1/2
 		
         return matrix_a.tocsr(), matrix_b.tocsr()
 
 class FirstOrderWaveEqOneDimension2(object):
-	"""Generate ODEs from 1-d wave equation"""
+    """Generate ODEs from 1-d wave equation"""
 
     # This benchmark is from the book: "Numerical Partial Differential Equations:
     # finite difference method"
-    # J. W. Thomas, Springer
-	
-	# we consider Periodic Boundary Condition at x = 0, u = 0.5. use forward space discretization difference scheme
-    def __init__(self, speed_const, len_x):# x = 0 is not included
+    # J. W. Thomas, Springer	
+    # we consider Periodic Boundary Condition at x = 0, u = 0.5. use forward space discretization difference scheme
 
-        self.speed_const = speed_const if speed_const > 0 else 0  # speed_const
+    def __init__(self, speed_const, len_x):# x = 0 is not included
+	self.speed_const = speed_const if speed_const > 0 else 0  # speed_const, wave moves backward
         self.len_x = len_x if len_x > 0 else 0    # length along x-axis
         if self.speed_const == 0 or self.len_x == 0:
             raise ValueError('inappropriate parameters')
@@ -450,17 +449,18 @@ class FirstOrderWaveEqOneDimension2(object):
 
         # fill matrix_a
 
-        for i in xrange(0, num_x):
+        for i in xrange(0, num_x - 1):
             matrix_a[i, i] = -a  # filling diagonal
 
             # fill along x - axis, subdiagonal
-            matrix_a[i + 1, i] = a
+            matrix_a[i, i + 1] = a
 				
-		matrix_a[num_x - 1, 0] = a
+	    matrix_a[num_x - 1, num_x - 1] = - a
+	    matrix_a[num_x - 1, 0] = a
 		
         return matrix_a.tocsr(), matrix_b.tocsr()
 
-class FirstOrderWaveEqTwoDimension		
+class FirstOrderWaveEqTwoDimension(object):		
     """Generate ODEs from 2-d 1st order wave equation"""
 
     # This benchmark is from the book: "Numerical Partial Differential Equations:
@@ -470,12 +470,12 @@ class FirstOrderWaveEqTwoDimension
 	# we consider Dirichlet B.C. at x = 0, u = 0.5. and y = 0, u = 1. Use backward space discretization difference scheme
 	
     def __init__(self, xspeed_const, yspeed_const, len_x, len_y):
-		self.xspeed_const = xspeed_const if xspeed_const > 0 else 0  # xspeed_const
-		self.yspeed_const = yspeed_const if yspeed_const > 0 else 0  # yspeed_const
+	self.xspeed_const = xspeed_const if xspeed_const > 0 else 0  # xspeed_const
+	self.yspeed_const = yspeed_const if yspeed_const > 0 else 0  # yspeed_const
         self.len_x = len_x if len_x > 0 else 0  # length x
         self.len_y = len_y if len_y > 0 else 0  # length y
 		
-		if self.xspeed_const == 0 or self.yspeed_const or self.len_x == 0 or self.len_y == 0:
+	if self.xspeed_const == 0 or self.yspeed_const or self.len_x == 0 or self.len_y == 0:
             raise ValueError('inappropriate parameters')
 
     def get_odes(self, num_x, num_y):
@@ -508,20 +508,20 @@ class FirstOrderWaveEqTwoDimension
             print "the {}th variable is the temperature at the mesh point ({},{})".format(i, x_pos, y_pos)
             
 			# fill along x - axis
-            if y_pos = 0:#first block
+            if y_pos == 0:#first block
                 matrix_a[i, i - 1] = -a  #building B
-				matrix_a[i, i] = b + a
+		matrix_a[i, i] = b + a
 				
-				matrix_b[i, 0] = b* 1/2	  #B.C. at x = 0, we assume x = 1/2	
+		matrix_b[i, 0] = b* 1/2	  #B.C. at x = 0, we assume x = 1/2	
 				
             else:
                 matrix_a[i, i - 1] = -a  #building B
-				matrix_a[i, i] = b + a
+		matrix_a[i, i] = b + a
 				
-				matrix_a[i, i - num_x] = -b # building - I
+		matrix_a[i, i - num_x] = -b # building - I
 			
-			if x_pos = 0
-				matrix_b[i, 0] = matrix_b[i, 0] - a * 1 #B.C. at y = 0, we assume y = 1			
+	    if x_pos == 0:
+		matrix_b[i, 0] = matrix_b[i, 0] - a * 1 #B.C. at y = 0, we assume y = 1			
 			
         return matrix_a.tocsr(), matrix_b.tocsr()	
 		
@@ -529,12 +529,17 @@ def sim_odeint_sparse(sparse_a_matrix, init_vec, input_vec, step, num_steps):
     'use odeint and keep the A matrix sparse'
 
     num_dims = sparse_a_matrix.shape[0]
+
+    #print "\n" + str(num_dims)
+
     times = np.linspace(0, step, num_steps)
 
     def der_func(state, _):
         'linear derivative function'
-
+	#print "\n" + str(input_vec.shape)
+	#print "\n" + str(np.array(sparse_a_matrix * state).shape)
         rv = np.array(sparse_a_matrix * state) + input_vec
+	#print "\n" + str(rv.shape)
         rv.shape = (num_dims,)
 
         return rv
