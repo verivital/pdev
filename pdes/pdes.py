@@ -470,12 +470,13 @@ class FirstOrderWaveEqTwoDimension(object):
 	# we consider Dirichlet B.C. at x = 0, u = 0.5. and y = 0, u = 1. Use backward space discretization difference scheme
 	
     def __init__(self, xspeed_const, yspeed_const, len_x, len_y):
-	self.xspeed_const = xspeed_const if xspeed_const > 0 else 0  # xspeed_const
-	self.yspeed_const = yspeed_const if yspeed_const > 0 else 0  # yspeed_const
+	self.xspeed_const = xspeed_const if xspeed_const < 0 else 0  # xspeed_const, wave move forward
+	self.yspeed_const = yspeed_const if yspeed_const < 0 else 0  # yspeed_const
         self.len_x = len_x if len_x > 0 else 0  # length x
         self.len_y = len_y if len_y > 0 else 0  # length y
+	
 		
-	if self.xspeed_const == 0 or self.yspeed_const or self.len_x == 0 or self.len_y == 0:
+	if self.xspeed_const == 0 or self.yspeed_const == 0 or self.len_x == 0 or self.len_y == 0:
             raise ValueError('inappropriate parameters')
 
     def get_odes(self, num_x, num_y):
@@ -497,7 +498,7 @@ class FirstOrderWaveEqTwoDimension(object):
         matrix_b = sparse.lil_matrix((num_var, 1))	#incorporate 2 B.C. into one column 
 
         a = self.xspeed_const / disc_step_x	#xspeed/delta x
-        b = self.yspeed_const / disc_step_y #yspeed/delta y
+        b = self.yspeed_const / disc_step_y 	#yspeed/delta y
 
         # fill matrix_a
 
@@ -505,14 +506,14 @@ class FirstOrderWaveEqTwoDimension(object):
             matrix_a[i, i] = a + b    # filling diagonal
             x_pos = i % num_x     # x-position corresponding to i-th state variable
             y_pos = int((i - x_pos) / num_x)
-            print "the {}th variable is the temperature at the mesh point ({},{})".format(i, x_pos, y_pos)
+            #print "the {}th variable is the temperature at the mesh point ({},{})".format(i, x_pos, y_pos)
             
 			# fill along x - axis
             if y_pos == 0:#first block
                 matrix_a[i, i - 1] = -a  #building B
 		matrix_a[i, i] = b + a
 				
-		matrix_b[i, 0] = b* 1/2	  #B.C. at x = 0, we assume x = 1/2	
+		matrix_b[i, 0] = b* 0	  #B.C. at y = 0, we assume u = 1/2	
 				
             else:
                 matrix_a[i, i - 1] = -a  #building B
@@ -521,7 +522,7 @@ class FirstOrderWaveEqTwoDimension(object):
 		matrix_a[i, i - num_x] = -b # building - I
 			
 	    if x_pos == 0:
-		matrix_b[i, 0] = matrix_b[i, 0] - a * 1 #B.C. at y = 0, we assume y = 1			
+		matrix_b[i, 0] = matrix_b[i, 0] - a * 0 #B.C. at x = 0, we assume u = 1			
 			
         return matrix_a.tocsr(), matrix_b.tocsr()	
 		
