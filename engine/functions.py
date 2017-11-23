@@ -75,6 +75,16 @@ class Functions(object):
     def Si_n_func(step, t_n_minus_1):
         'Si[n](t) function at time step t = tn,  used in interpolation in time'
 
+        assert step > 0, 'invalid time_step'
+        assert isinstance(step, float)
+        assert isinstance(t_n_minus_1, float)
+        assert t_n_minus_1 >= 0
+
+        func = Function('func')
+        func = (t - t_n_minus_1) / step
+
+        return func
+
     @staticmethod
     def Si_n_minus_1_func(step, t_n):
         'Si[n - 1] (t) function at time step tn = n, used in interpolation in time'
