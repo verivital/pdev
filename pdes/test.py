@@ -375,10 +375,10 @@ def wave_1d2():
 def wave_2d():
 	'test 2-dimensional wave equation'
 	# parameters
-	len_x = 10
-	len_y = 10
-	a_speed_const = 3
-	b_speed_const = 5
+	len_x = 30
+	len_y = 30
+	a_speed_const = -1
+	b_speed_const = -1
 	
 	he = FirstOrderWaveEqTwoDimension(a_speed_const, b_speed_const, len_x, len_y)
 	num_x = 60 # number of meshpoint between 0 and len_x
@@ -387,15 +387,18 @@ def wave_2d():
 	print "\nmatrix_a:\n{}".format(matrix_a.toarray())
 	print "\nmatrix_b:\n{}".format(matrix_b.toarray())
 
-
 	# simulate linear ode model of 2-d wave equation
 	n = matrix_a.shape[0]
 	init_vec = np.zeros((n,))
-	# Initial condition IC: u(x,y,0) = sin(pi*x*y/100), 0 <= x <= 10
-	for i in xrange(0, n):
+	num_var = num_x * num_y
+
+	# Initial condition IC: u(x,y,0) = 1, 0 <= x <= 5, 0 <= y <= 5
+	for i in xrange(0, num_var):
 		pos_x = i%num_x
 		pos_y = int((i - pos_x) / num_x)
-		init_vec[i] = math.sin(math.pi*float((pos_x * pos_y)/(num_x)))
+		if pos_x <= 10 and pos_y <= 10 :
+			init_vec[i] = 1
+		#init_vec[i] = math.sin(math.pi*float((pos_x * pos_y)/(num_var)))
 	
 	print "\ninitial vector v = {}".format(init_vec)
 
@@ -406,14 +409,26 @@ def wave_2d():
     #v_vec = np.array([f1, g1, g2])
     #input_vec = matrix_b*v_vec
 	
-	input_vec = matrix_b
-	final_time = 10000
-	num_steps = 1000000
+	input_vec = matrix_b*[1]
+	final_time = 30
+	num_steps = 300
+
+	time_step = float(final_time)/float(num_steps)
+	discretization_stepx = float(len_x)/float(num_x)
+	discretization_stepy = float(len_y)/float(num_y)
+
+	if (math.sqrt((-a_speed_const)**(2) + (-b_speed_const)**(2)) * time_step >= math.sqrt(discretization_stepx**(2) + discretization_stepy**(2))):
+		raise ValueError("\nThe stability condition for numerical method is not satisfied")
+
 	times = np.linspace(0, final_time, num_steps)
 	runtime, result = sim_odeint_sparse(matrix_a, init_vec, input_vec, final_time, num_steps)
 
 	print "\n the result is: \n{}".format(result)
 	print "\n result shape is: \n{}".format(result.shape)
+
+	mid_value = result[120,1800:1860]
+	print mid_value.shape
+    	print "\n the final value is: {}".format(mid_value)
 
     # plot the center point temperature
     #center_point_pos_x = int(math.ceil(num_x/2)) - 1
@@ -422,12 +437,11 @@ def wave_2d():
     #center_point_state_pos = center_point_pos_y*num_x + center_point_pos_x
     #print "\ncenter_point corresponds to the {}-th state variable".format(center_point_state_pos)
 
-    #center_point_temp = result[:, center_point_state_pos]
-    #plt.plot(times, center_point_temp, 'b', label='center_point')
-    #plt.legend(loc='best')
-    #plt.xlabel('t')
-    #plt.grid()
-    #plt.show()
+	plt.plot(np.linspace(0, 30, 60), mid_value, 'b', label='mid_value')
+    	plt.legend(loc='best')
+    	plt.xlabel('x and y')
+    	plt.grid()
+    	plt.show()
 	
 	
 if __name__ == '__main__':
@@ -437,4 +451,5 @@ if __name__ == '__main__':
     #ZhiHan_benchmark()
     #heat_3d() # 3-dimensional heat equation benchmark
 	#wave_1d1()
-	wave_1d2()
+	#wave_1d2()
+	wave_2d()
