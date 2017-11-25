@@ -12,7 +12,7 @@ from engine.pde_automaton import DPdeAutomaton
 from engine.verifier import DVerifier
 from engine.set import RectangleSet
 from engine.plot import Plot
-from engine.interpolation import Interpolation
+from engine.interpolation import Interpolation, InterpolSetInSpace
 
 
 if __name__ == '__main__':
@@ -114,8 +114,8 @@ if __name__ == '__main__':
 
     ############################################################
     # test interpolation class
-    Vn = lil_matrix((3, 1), dtype=float)
-    ln = lil_matrix((3, 1), dtype=float)
+    Vn = np.zeros((3, 1), dtype=float)
+    ln = np.zeros((3, 1), dtype=float)
     Vn[0, 0] = 0.1
     Vn[1, 0] = 0.2
     Vn[2, 0] = 0.3
@@ -125,9 +125,21 @@ if __name__ == '__main__':
 
     xlist = [0, 0.5, 1]
     intpl = Interpolation()
-    intpl_set = intpl.interpolate_in_space(xlist, Vn.tocsc(), ln.tocsc())
+    intpl_set = intpl.interpolate_in_space(xlist, Vn, ln)
     print "\ninterpolation set (in space):"
-    print "\na1 = {}, \nb1 = {}, \na2 = {}, \nb2 = {}".format(intpl_set.a1_current_step_list, \
-                                                                  intpl_set.b1_current_step_list,\
-                                                                  intpl_set.a2_current_step_list, \
-                                                                  intpl_set.b2_current_step_list)
+    print "\na_vec = {}, \nb_vec = {}, \nc_vec = {}, \nd_vec = {}".format(intpl_set.a_vec, intpl_set.b_vec, intpl_set.c_vec, intpl_set.d_vec)
+
+    IS = InterpolSetInSpace()
+
+    IS.set_values(
+        xlist,
+        intpl_set.a_vec,
+        intpl_set.b_vec,
+        intpl_set.c_vec,
+        intpl_set.d_vec)
+
+    alpha_range = [0.0, 1.0]
+    beta_range = [1.0, 2.0]
+    min_vec, min_points, max_vec, max_points = IS.get_min_max(alpha_range, beta_range)
+
+    print "\nmin_vec = {}, \nmin_points = {}, \nmax_vec = {}, \nmax_points = {}".format(min_vec, min_points, max_vec, max_points)

@@ -3,8 +3,9 @@ This module implements some basic functions used for reachable set computation a
 Dung Tran: Nov/2017
 '''
 
-from sympy import Piecewise, And, Function
-from sympy.abc import x, t
+from sympy import Piecewise, And, Function, lambdify
+from sympy.abc import x, t, alpha, beta
+from scipy.optimize import minimize
 
 
 class Functions(object):
@@ -51,7 +52,7 @@ class Functions(object):
                                   x <= seg_x[2])),
                              (0, x > seg_x[2]))
 
-        return func
+        return lambdify(x, func)
 
     @staticmethod
     def input_func():
@@ -60,7 +61,7 @@ class Functions(object):
         # can be general function with x and t variables
         func = Function('func')
         func = 2 * x + 3 * t    # you can change f(x,t) function here
-        return func
+        return lambdify((x, t), func)
 
     @staticmethod
     def init_func():
@@ -69,7 +70,7 @@ class Functions(object):
         # can be general function with variable x
         func = Function('func')
         func = 2 * x ** 2 + 1    # you can change u0(x) function here
-        return func
+        return lambdify(x, func)
 
     @staticmethod
     def Si_n_func(step, t_n_minus_1):
@@ -83,7 +84,7 @@ class Functions(object):
         func = Function('func')
         func = (t - t_n_minus_1) / step
 
-        return func
+        return lambdify(t, func)
 
     @staticmethod
     def Si_n_minus_1_func(step, t_n):
@@ -97,4 +98,73 @@ class Functions(object):
         func = Function('func')
         func = (t_n - t) / step
 
-        return func
+        return lambdify(t, func)
+
+    @staticmethod
+    def intpl_inspace_func(a, b, c, d):
+        'Un(x) function after doing interpolation in space'
+
+        # U_n(x) = (a*alpha + b*beta)*x + c*alpha + d*beta
+
+        assert isinstance(a, float)
+        assert isinstance(b, float)
+        assert isinstance(c, float)
+        assert isinstance(d, float)
+        func = Function('func')
+        func = (a * alpha + b * beta) * x + c * alpha + d * beta
+        func_eval = lambdify((x, alpha, beta), func)
+
+        def my_func(y):
+            return func_eval(*tuple(y))
+
+        return my_func
+
+    @staticmethod
+    def intpl_in_time_and_space_func(
+            step, delta_a, delta_b, delta_gamma_a, delta_gamma_b, delta_gamma_c, delta_gamma_d):
+        'U(x,t) function after doing interpolation in both space and time'
+
+        # U(x) = (1/step) * (delta_a * alpha + delta_b * beta) * t * x +
+        #         (delta_gamma_a * alpha + delta_gamma_b * beta) * x +
+        #         (delta_gamma_c * alpha + delta_gamma_d * beta)
+
+        assert isinstance(step, float)
+        assert step > 0, 'invalid time step'
+        assert isinstance(delta_a, float)
+        assert isinstance(delta_b, float)
+        assert isinstance(delta_gamma_a, float)
+        assert isinstance(delta_gamma_b, float)
+        assert isinstance(delta_gamma_c, float)
+        assert isinstance(delta_gamma_d, float)
+
+        func = Function('func')
+        func = (1 / step) * (delta_a * alpha + delta_b * beta) * t * x + \
+            (delta_gamma_a * alpha + delta_gamma_b * beta) * x + \
+            delta_gamma_c * alpha + delta_gamma_d * beta
+
+        func_eval = lambdify((t, x, alpha, beta), func)
+
+        def my_func(y):
+            return func_eval(*(tuple(y)))
+
+        return my_func
+
+
+if __name__ == '__main__':
+
+    a1 = 0.1
+    b1 = 0.2
+    c1 = 0.3
+    d1 = 0.0
+    myfun = Functions.intpl_inspace_func(a1, b1, c1, d1)
+    print "\nf(2, 1, 1) = {}".format(myfun([2, 1, 1]))
+
+    x0 = [1, 1, 1]
+    bnds = ((-1, 1), (1, 2), (0, 1))
+    res = minimize(myfun, x0, method='TNC', bounds=bnds, tol=1e-10)
+    print "\nresult_MIN = {}".format(res)
+
+    myfun2 = Functions.intpl_inspace_func(-a1, -b1, -c1, -d1)
+
+    res2 = minimize(myfun2, x0, method='TNC', bounds=bnds, tol=1e-10)
+    print "\nresult_MAX = {}".format(res2)
