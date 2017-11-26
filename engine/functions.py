@@ -114,10 +114,7 @@ class Functions(object):
         func = (a * alpha + b * beta) * x + c * alpha + d * beta
         func_eval = lambdify((x, alpha, beta), func)
 
-        def my_func(y):
-            return func_eval(*tuple(y))
-
-        return my_func
+        return func_eval(*tuple(x))
 
     @staticmethod
     def intpl_in_time_and_space_func(
@@ -144,10 +141,7 @@ class Functions(object):
 
         func_eval = lambdify((t, x, alpha, beta), func)
 
-        def my_func(y):
-            return func_eval(*(tuple(y)))
-
-        return my_func
+        return func_eval(*(tuple(x)))
 
 
 if __name__ == '__main__':
