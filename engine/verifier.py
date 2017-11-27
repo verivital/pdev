@@ -20,7 +20,7 @@ class Verifier(object):
         self.current_V = None    # Vn = A^n * Vn-1, V0 = U0
         self.current_l = None    # ln = Sigma_[i=0 to i = n-1] (A^i * b)
         self.to_current_step_set = []     # include all reach sets from 0 to current step
-        self.current_constraints = None    # current constraint to check safety
+        self.current_constraints = None    # current constraint to check safety based on discreted reach set
         self.unsafe_trace = []    # trace for unsafe case
 
     def compute_reach_set(self, dPde, toTimeStep):
