@@ -170,37 +170,19 @@ class Fem1D(object):
         return matrix_a, vector_b
 
     @staticmethod
-    def u0x_func(x, c):
-        'return u(x, 0) = u_0(x) initial function at t = 0'
-
-        # assumpe u_0(x) is a polynomial function defined by u_0(x) = c0 + c1 *
-        # x1 + ... + cn * x^n
-
-        assert isinstance(c, list)
-        assert len(c) >= 1, 'len(c) = {} should be >= 1'.format(len(c))
-
-        def func(x):
-            'function'
-
-            return sum(a * x**i for i, a in enumerate(c))
-
-        return func
-
-    @staticmethod
-    def get_init_cond(x, u0x_func):
+    def get_init_cond(x):
         'get initial condition from initial condition function'
 
         # x is list of discreted mesh points, for example x = [0 , 0.1, 0.2, .., 0.9, 1]
-        # u0x_func is defined above
         assert isinstance(x, list)
         assert len(x) >= 3, 'len(x) = {} should be >= 3'.format(len(x))
 
         n = len(x)
         u0 = lil_matrix((n, 1), dtype=float)
-
+        _, init_func = Functions.init_func()
         for i in xrange(0, n):
             v = x[i]
-            u0[i, 0] = u0x_func(v)
+            u0[i, 0] = init_func(v)
 
         return u0.tocsc()
 

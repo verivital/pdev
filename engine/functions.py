@@ -94,8 +94,8 @@ class Functions(object):
 
         # can be general function with variable x
         func = Function('func')
-        func = 2 * x ** 2 + 1    # you can change u0(x) function here
-        return lambdify(x, func)
+        func = 2 * x + 1    # you can change u0(x) function here
+        return func, lambdify(x, func)
 
     @staticmethod
     def Si_n_func(step, t_n_minus_1):
@@ -109,7 +109,7 @@ class Functions(object):
         func = Function('func')
         func = (t - t_n_minus_1) / step
 
-        return lambdify(t, func)
+        return func, lambdify(t, func)
 
     @staticmethod
     def Si_n_minus_1_func(step, t_n):
@@ -123,7 +123,7 @@ class Functions(object):
         func = Function('func')
         func = (t_n - t) / step
 
-        return lambdify(t, func)
+        return func, lambdify(t, func)
 
     @staticmethod
     def intpl_inspace_func(a, b, c, d):

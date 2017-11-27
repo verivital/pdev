@@ -39,11 +39,8 @@ if __name__ == '__main__':
     print "\nA = {} \nb = {}".format(A.todense(), b.todense())
     print "\ntype of A is {}, type of b is {}".format(type(A), type(b))
 
-    y = []
-    c = [1, 2]    # parameters for initial function u0(x)
-    u0_func = FEM.u0x_func(y, c)    # define initial function u0(x)
     # compute initial conditions
-    u0 = FEM.get_init_cond(mesh_points, u0_func)
+    u0 = FEM.get_init_cond(mesh_points)
     print"\nu0 = {}".format(u0.todense())    # initial condition vector u0
 
     # get trace with initial vector u0
