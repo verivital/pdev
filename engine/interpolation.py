@@ -36,7 +36,6 @@ class InterpolSetInSpace(object):
 
         assert a_current_step_vec.shape == b_current_step_vec.shape == \
             c_current_step_vec.shape == d_current_step_vec.shape, 'inconsistent data'
-        assert a_current_step_vec.shape[1] == 1, 'invalid shape'
 
         assert isinstance(xlist, list)
         for i in xrange(0, len(xlist) - 1):
@@ -157,7 +156,7 @@ class InterpolationSet(object):
         assert isinstance(delta_gamma_d_matrix, np.ndarray)
 
         assert delta_a_matrix.shape == delta_b_matrix.shape == \
-            delta_gamma_a_matrix == delta_gamma_b_matrix == delta_gamma_c_matrix.shape == \
+            delta_gamma_a_matrix.shape == delta_gamma_b_matrix.shape == delta_gamma_c_matrix.shape == \
             delta_gamma_d_matrix.shape, 'invalid data set'
 
         assert isinstance(xlist, list)
@@ -315,22 +314,22 @@ class Interpolation(object):
         n = len(xlist)
         Vn = vector_Vn
         ln = vector_ln
-        a_n_vector = np.zeros((n - 1, 1), dtype=float)
-        b_n_vector = np.zeros((n - 1, 1), dtype=float)
-        c_n_vector = np.zeros((n - 1, 1), dtype=float)
-        d_n_vector = np.zeros((n - 1, 1), dtype=float)
+        a_n_vector = np.zeros((n - 1,), dtype=float)
+        b_n_vector = np.zeros((n - 1,), dtype=float)
+        c_n_vector = np.zeros((n - 1,), dtype=float)
+        d_n_vector = np.zeros((n - 1,), dtype=float)
 
         for i in xrange(0, n - 1):
             hi_plus_1 = xlist[i + 1] - xlist[i]
             delta_Vn_i = Vn[i + 1, 0] - Vn[i, 0]
             delta_ln_i = ln[i + 1, 0] - ln[i, 0]
 
-            a_n_vector[i, 0] = delta_Vn_i / hi_plus_1
-            b_n_vector[i, 0] = delta_ln_i / hi_plus_1
-            c_n_vector[i, 0] = (Vn[i, 0] * xlist[i + 1] -
-                                Vn[i + 1, 0] * xlist[i]) / hi_plus_1
-            d_n_vector[i, 0] = (ln[i, 0] * xlist[i + 1] -
-                                ln[i + 1, 0] * xlist[i]) / hi_plus_1
+            a_n_vector[i] = delta_Vn_i / hi_plus_1
+            b_n_vector[i] = delta_ln_i / hi_plus_1
+            c_n_vector[i] = (Vn[i, 0] * xlist[i + 1] -
+                             Vn[i + 1, 0] * xlist[i]) / hi_plus_1
+            d_n_vector[i] = (ln[i, 0] * xlist[i + 1] -
+                             ln[i + 1, 0] * xlist[i]) / hi_plus_1
 
         interpol_inspace_set = InterpolSetInSpace()
         interpol_inspace_set.set_values(
@@ -361,7 +360,7 @@ class Interpolation(object):
         for dreachset in dreachset_list:
             interpol_inspace_set_list.append(
                 Interpolation.interpolate_in_space(
-                    xlist, dreachset.Vn, dreachset.ln))
+                    xlist, dreachset.Vn.todense(), dreachset.ln.todense()))
 
         return interpol_inspace_set_list
 

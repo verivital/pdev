@@ -72,6 +72,12 @@ if __name__ == '__main__':
     print"\nSafety of discreted Pde:"
     verifier.on_fly_check(dPde, 10)
 
+    ############################################################
+    # test interpolation class
+    intpl = Interpolation()
+    intpl_inspace_list = intpl.interpolate_in_space_for_all_timesteps(mesh_points, reachable_set)
+    interpolation_set = intpl.interpolate_in_time_and_space(step, intpl_inspace_list)
+
     #########################################################
     # test plot class
 
@@ -106,35 +112,3 @@ if __name__ == '__main__':
         colors='b',
         linestyles='solid')
     plt.show()    # plot vlines
-
-    ############################################################
-    # test interpolation class
-    Vn = np.zeros((3, 1), dtype=float)
-    ln = np.zeros((3, 1), dtype=float)
-    Vn[0, 0] = 0.1
-    Vn[1, 0] = 0.2
-    Vn[2, 0] = 0.3
-    ln[0, 0] = 0.2
-    ln[1, 0] = 0.2
-    ln[2, 0] = 0.5
-
-    xlist = [0, 0.5, 1]
-    intpl = Interpolation()
-    intpl_set = intpl.interpolate_in_space(xlist, Vn, ln)
-    print "\ninterpolation set (in space):"
-    print "\na_vec = {}, \nb_vec = {}, \nc_vec = {}, \nd_vec = {}".format(intpl_set.a_vec, intpl_set.b_vec, intpl_set.c_vec, intpl_set.d_vec)
-
-    IS = InterpolSetInSpace()
-
-    IS.set_values(
-        xlist,
-        intpl_set.a_vec,
-        intpl_set.b_vec,
-        intpl_set.c_vec,
-        intpl_set.d_vec)
-
-    alpha_range = [0.0, 1.0]
-    beta_range = [1.0, 2.0]
-    min_vec, min_points, max_vec, max_points = IS.get_min_max(alpha_range, beta_range)
-
-    print "\nmin_vec = {}, \nmin_points = {}, \nmax_vec = {}, \nmax_points = {}".format(min_vec, min_points, max_vec, max_points)
