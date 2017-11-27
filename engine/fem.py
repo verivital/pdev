@@ -10,6 +10,7 @@ Main references:
 from scipy.sparse import lil_matrix, csc_matrix, linalg
 import numpy as np
 from engine.functions import Functions
+from engine.pde_automaton import DPdeAutomaton
 
 
 class Fem1D(object):
@@ -146,34 +147,17 @@ class Fem1D(object):
             elif 0 < i < n - 1:
                 seg_x = [x[i - 1], x[i], x[i + 1]]
 
-            b[i, 0] = Functions.integrate_input_func_mul_phi(seg_x, x_dom, [0.0, time_step])
+            b[i, 0] = Functions.integrate_input_func_mul_phi(
+                seg_x, x_dom, [0.0, time_step])
 
         return b.tocsc()
-
-    @staticmethod
-    def get_ode(mass_mat, stiff_mat, load_vec, time_step):
-        'obtain discreted ODE model'
-
-        # the discreted ODE model has the form of: U_n = A * U_(n-1) + b
-
-        assert isinstance(mass_mat, csc_matrix)
-        assert isinstance(stiff_mat, csc_matrix)
-        assert isinstance(load_vec, csc_matrix)
-        assert isinstance(time_step, float)
-        assert (time_step > 0), 'time step k = {} should be >= 0'.format(time_step)
-
-        matrix_a = linalg.inv((mass_mat + stiff_mat.multiply(time_step / 2))) * \
-            (mass_mat - stiff_mat.multiply(time_step / 2))
-        vector_b = linalg.inv(mass_mat + stiff_mat.multiply(time_step / 2)) * \
-            load_vec
-
-        return matrix_a, vector_b
 
     @staticmethod
     def get_init_cond(x):
         'get initial condition from initial condition function'
 
-        # x is list of discreted mesh points, for example x = [0 , 0.1, 0.2, .., 0.9, 1]
+        # x is list of discreted mesh points, for example x = [0 , 0.1, 0.2,
+        # .., 0.9, 1]
         assert isinstance(x, list)
         assert len(x) >= 3, 'len(x) = {} should be >= 3'.format(len(x))
 
@@ -185,6 +169,24 @@ class Fem1D(object):
             u0[i, 0] = init_func(v)
 
         return u0.tocsc()
+
+    @staticmethod
+    def get_dPde_automaton(x, x_dom, time_step):
+        'produce discreted Pde automaton'
+
+        mass_mat = Fem1D.mass_assembler(x)
+        stiff_mat = Fem1D.stiff_assembler(x)
+        load_vec = Fem1D.load_assembler(x, x_dom, time_step)
+        init_vector = Fem1D.get_init_cond(x)
+
+        matrix_a = linalg.inv((mass_mat + stiff_mat.multiply(time_step / 2))) * \
+            (mass_mat - stiff_mat.multiply(time_step / 2))
+        vector_b = linalg.inv(mass_mat + stiff_mat.multiply(time_step / 2)) * load_vec
+
+        dPde = DPdeAutomaton()
+        dPde.set_dynamics(matrix_a, vector_b, init_vector, x, time_step)
+
+        return mass_mat, stiff_mat, load_vec, init_vector, dPde
 
     @staticmethod
     def get_trace(matrix_a, vector_b, vector_u0, step, num_steps):

@@ -8,7 +8,7 @@ from engine.pde_automaton import DPdeAutomaton
 from engine.set import DReachSet, GeneralSet
 
 
-class DVerifier(object):
+class Verifier(object):
     'verifier for discreted pde automaton'
 
     # verify the safety of discreted pde automaton from step 0 to step N

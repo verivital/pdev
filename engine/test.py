@@ -8,11 +8,10 @@ import matplotlib.pyplot as plt
 from scipy.sparse import lil_matrix
 import numpy as np
 from engine.fem import Fem1D
-from engine.pde_automaton import DPdeAutomaton
-from engine.verifier import DVerifier
+from engine.verifier import Verifier
 from engine.set import RectangleSet
 from engine.plot import Plot
-from engine.interpolation import Interpolation, InterpolSetInSpace
+from engine.interpolation import Interpolation
 
 
 if __name__ == '__main__':
@@ -21,48 +20,33 @@ if __name__ == '__main__':
     # test Fem1D class
     FEM = Fem1D()
     mesh_points = [0.0, 0.5, 1.0, 1.5, 2.0]    # generate mesh points
-
-    mass_matrix = FEM.mass_assembler(mesh_points)    # compute mass matrix M
-    stiff_matrix = FEM.stiff_assembler(mesh_points)    # compute stiff matrix S
-
     step = 0.1    # time step of FEM
     x_dom = [0.5, 1.0]    # domain of input function
-    load_vector = FEM.load_assembler(mesh_points, x_dom, step)    # compute load vector
 
-    print "\nmass matrix = \n{}".format(mass_matrix.todense())
-    print "\nstiff matrix = \n{}".format(stiff_matrix.todense())
-    print "\nload vector = \n{}".format(load_vector.todense())
-
-    A, b = FEM.get_ode(mass_matrix, stiff_matrix, load_vector,
-                       step)    # get the discreted ODE model
-
-    print "\nA = {} \nb = {}".format(A.todense(), b.todense())
-    print "\ntype of A is {}, type of b is {}".format(type(A), type(b))
-
-    # compute initial conditions
-    u0 = FEM.get_init_cond(mesh_points)
-    print"\nu0 = {}".format(u0.todense())    # initial condition vector u0
+    mass_mat, stiff_mat, load_vec, init_vector, dPde = Fem1D().get_dPde_automaton(mesh_points, x_dom, step)
+    print "\nmass matrix = \n{}".format(mass_mat.todense())
+    print "\nstiff matrix = \n{}".format(stiff_mat.todense())
+    print "\nload vector = \n{}".format(load_vec.todense())
+    print "\ninit vector = \n{}".format(init_vector.todense())
+    print "\ndPde matrix_a = {}".format(dPde.matrix_a.todense())
+    print "\ndPde vector_b = {}".format(dPde.vector_b.todense())
 
     # get trace with initial vector u0
-    u = FEM.get_trace(A, b, u0, step=0.1, num_steps=4)
+    u = FEM.get_trace(dPde.matrix_a, dPde.vector_b, init_vector, step=0.1, num_steps=4)
 
-    #########################################################
-    # test DPdeAutomation object class
-    dPde = DPdeAutomaton()
-    dPde.set_dynamics(A, b, u0, step)    # set dynamic of discreted PDE
     alpha_beta_range = np.array([[0, 1], [1, 1]])    # set perturbation range
     perturbation = dPde.set_perturbation(alpha_beta_range)
 
     ########################################################
-    # test Dverifier class
+    # test verifier class
 
-    verifier = DVerifier()
+    verifier = Verifier()
     toTimeStep = 10
     reachable_set = verifier.compute_reach_set(
         dPde, toTimeStep)    # compute reachable set
 
-    direction_matrix = lil_matrix((1, A.shape[0]), dtype=float)
-    direction_matrix[0, math.ceil(A.shape[0] / 2)] = 1
+    direction_matrix = lil_matrix((1, dPde.matrix_a.shape[0]), dtype=float)
+    direction_matrix[0, math.ceil(dPde.matrix_a.shape[0] / 2)] = 1
     unsafe_vector = lil_matrix((1, 1), dtype=float)
     unsafe_vector[0, 0] = -1
 

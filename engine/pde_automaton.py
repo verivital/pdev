@@ -16,11 +16,12 @@ class DPdeAutomaton(object):
         self.matrix_a = None
         self.vector_b = None
         self.time_step = None
+        self.xlist = None
         self.init_vector = None
         self.perturbation = None
         self.unsafe_set = None
 
-    def set_dynamics(self, matrix_a, vector_b, init_vector, time_step):
+    def set_dynamics(self, matrix_a, vector_b, init_vector, xlist, time_step):
         'set dynamic of discreted pde automaton'
 
         assert isinstance(matrix_a, csc_matrix)
@@ -35,12 +36,18 @@ class DPdeAutomaton(object):
         assert matrix_a.shape[0] == init_vector.shape[0], 'matrix_a and init_vector are inconsistent'
         assert init_vector.shape[1] == 1
 
+        assert isinstance(xlist, list)
+        assert len(xlist) >= 3, 'xlist should have at least three points'
+        for i in xrange(0, len(xlist) - 1):
+            assert 0 <= xlist[i] < xlist[i + 1], 'invalid xlist'
+
         assert (time_step > 0), 'time step k = {} should be >= 0'.format(time_step)
 
         self.matrix_a = matrix_a
         self.vector_b = vector_b
-        self.time_step = time_step
         self.init_vector = init_vector
+        self.xlist = xlist
+        self.time_step = time_step
 
     def set_perturbation(self, alpha_beta_range):
         'set pertupation on input function f and initial function u0(x)'
