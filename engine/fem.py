@@ -8,8 +8,8 @@ Main references:
 '''
 
 from scipy.sparse import lil_matrix, csc_matrix, linalg
-from scipy.integrate import quad
 import numpy as np
+from engine.functions import Functions
 
 
 class Fem1D(object):
@@ -105,71 +105,24 @@ class Fem1D(object):
         return stiff_matrix.tocsc()
 
     @staticmethod
-    def f_mul_phi(y, fc, pc):
-        'return f*phi function for computing load vector'
-
-        # assume f is polynomial function f = c0 + c1*y + c2*y^2 + ... + cm * y^m
-        # phi is hat function defined on pc = [pc[0], pc[1], pc[2]]
-        # at left boundary pc[0] = pc[1] = 0
-        # at right boudary pc[1] = pc[2] = ?
-
-        # todo: add more general function f which depends on t and x. using np.dblquad to calculate
-        # double integration
-
-        assert isinstance(fc, list)
-        assert isinstance(pc, list)
-        assert len(pc) == 3, 'len(pc) = {} != 3'.format(len(pc))
-        for i in xrange(0, len(pc) - 1):
-            assert pc[i] >= 0 and pc[i] <= pc[i + 1], 'pc[{}] = {} should be >= 0 and \
-                <= pc[{}] = {}'.format(i, pc[i], i + 1, pc[i + 1])
-
-        def func(y):
-            'piecewise function'
-
-            if pc[0] == pc[1]:    # left boundary phi_0
-                return (1 / (pc[2] - pc[1])) * (-sum((a * y**(i + 1) for i, a in enumerate(
-                    fc))) + pc[2] * sum((a * y**i for i, a in enumerate(fc))))
-            elif pc[1] == pc[2]:    # right boundary phi_m
-                return (1 / (pc[1] - pc[0])) * (sum((a * y**(i + 1) for i, a in enumerate(
-                    fc))) - pc[0] * sum((a * y**i for i, a in enumerate(fc))))
-            elif pc[0] < pc[1] < pc[2]:
-                if y < pc[0]:
-                    return 0.0
-                elif y >= pc[0] and y < pc[1]:
-                    return (1 / (pc[1] - pc[0])) * (sum((a * y**(i + 1) for i, a in enumerate(
-                        fc))) - pc[0] * sum((a * y**i for i, a in enumerate(fc))))
-
-                elif y >= pc[1] and y < pc[2]:
-                    return (1 / (pc[2] - pc[1])) * (-sum((a * y**(i + 1) for i, a in enumerate(
-                        fc))) + pc[2] * sum((a * y**i for i, a in enumerate(fc))))
-
-                elif y >= pc[2]:
-                    return 0.0
-
-        return np.vectorize(func)
-
-    @staticmethod
-    def load_assembler(x, fc, f_dom):
+    def load_assembler(x, x_dom, time_step):
         'compute load vector for 1D problem'
 
         # x is list of discretized mesh points for example x = [0 , 0.1, 0.2, .., 0.9, 1]
         # y is a variable that used to construct the f * phi function
-        # fc is the input function, here we consider polynomial function in space
-        # i.e. f = c0 + c1 * x + c2 * x^2 + .. + cm * x^m
-        # input fc = [c0, c1, c2, ... cm]
-        # f_dom defines the segment where the input function effect,
-        # f_domain = [x1, x2] ,  0 <= x1 <= x2 <= x_max
-        # return [b_i] = integral (f * phi_i dx)
+        # the input function is defined in engine.functions.Functions class
+        # x_dom = [x1, x2] defines the domain where the input function effect,
+        # t_dom = (0 <= t<= time_step))
+        # return [b_i] = integral (f * phi_i dx dt), ((x1 <= x <= x2), (0 <=
+        # t<= time_step))
 
         assert isinstance(x, list)
-        assert isinstance(fc, list)
-        assert isinstance(f_dom, list)
+        assert isinstance(x_dom, list)
 
         assert len(x) > 3, 'len(x) should >= 3'
-        assert len(fc) > 1, 'len(f) should >= 1'
-        assert len(f_dom) == 2, 'len(f_domain) should be 2'
-        assert (x[0] <= f_dom[0]) and (f_dom[0] <= f_dom[1]) and (
-            f_dom[1] <= x[len(x) - 1]), 'inconsistent domain'
+        assert len(x_dom) == 2, 'len(f_domain) should be 2'
+        assert (x[0] <= x_dom[0]) and (x_dom[0] <= x_dom[1]) and (
+            x_dom[1] <= x[len(x) - 1]), 'inconsistent domain'
 
         for i in xrange(0, len(x) - 2):
             assert isinstance(
@@ -177,25 +130,23 @@ class Fem1D(object):
             assert isinstance(
                 x[i + 1], float), 'x[{}] should be float type'.format(i + 1)
             assert x[i +
-                     1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i +
-                                                                               1], x[i])
+                     1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i + 1], x[i])
+
+        assert time_step > 0, 'invalid time_step'
 
         n = len(x)    # number of discretized variables
 
         b = lil_matrix((n, 1), dtype=float)
 
-        y = []
-
         for i in xrange(0, n):
             if i == 0:
-                pc = [x[0], x[0], x[1]]
+                seg_x = [x[0], x[0], x[1]]
             elif i == n - 1:
-                pc = [x[i - 1], x[i], x[i]]
+                seg_x = [x[i - 1], x[i], x[i]]
             elif 0 < i < n - 1:
-                pc = [x[i - 1], x[i], x[i + 1]]
-            fphi = Fem1D.f_mul_phi(y, fc, pc)
-            I = quad(fphi, f_dom[0], f_dom[1])
-            b[i, 0] = I[0]
+                seg_x = [x[i - 1], x[i], x[i + 1]]
+
+            b[i, 0] = Functions.integrate_input_func_mul_phi(seg_x, x_dom, [0.0, time_step])
 
         return b.tocsc()
 
@@ -214,7 +165,7 @@ class Fem1D(object):
         matrix_a = linalg.inv((mass_mat + stiff_mat.multiply(time_step / 2))) * \
             (mass_mat - stiff_mat.multiply(time_step / 2))
         vector_b = linalg.inv(mass_mat + stiff_mat.multiply(time_step / 2)) * \
-            load_vec.multiply(time_step)
+            load_vec
 
         return matrix_a, vector_b
 
@@ -275,12 +226,3 @@ class Fem1D(object):
             print "\n t = {} -> \n U =: \n{}".format(i * step, u_list[i].todense())
 
         return u_list
-
-    @staticmethod
-    def plot_trace(trace, step):
-        'plot trace of the discreted ODE model'
-
-        assert isinstance(trace, list)
-        n = len(trace)
-        assert n >= 2, 'trace should have at least two points, currently it has {} points'.format(
-            n)

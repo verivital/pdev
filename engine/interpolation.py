@@ -188,7 +188,11 @@ class InterpolationSet(object):
         assert isinstance(x_range, list)
         assert len(x_range) == len(
             time_range) == 2, 'invalid time range or invalid x_range'
-        assert isinstance(time_range[0], float) and isinstance(time_range[1], float)
+        assert isinstance(
+            time_range[0],
+            float) and isinstance(
+            time_range[1],
+            float)
 
         assert isinstance(x_range[0], float) and isinstance(x_range[1], float)
         assert x_range[0] >= self.xlist[0] and x_range[1] <= self.xlist[len(
@@ -212,8 +216,10 @@ class InterpolationSet(object):
         space_indx = x_stop_point - x_start_point + 1
         time_indx = time_stop_point - time_start_point + 1
 
-        min_vec = np.zeros((space_indx, time_indx), dtype=float)
-        max_vec = np.zeros((space_indx, time_indx), dtype=float)
+        min_matrix = np.zeros((time_indx, space_indx), dtype=float)
+        max_matrix = np.zeros((time_indx, space_indx), dtype=float)
+        min_points_matrix = np.zeros((time_indx, space_indx), dtype=float)
+        max_points_matrix = np.zeros((time_indx, space_indx), dtype=float)
 
         for j in xrange(time_start_point, time_stop_point):
             for i in xrange(x_start_point, x_stop_point):
@@ -224,9 +230,56 @@ class InterpolationSet(object):
                 delta_gamma_c = self.delta_gamma_c_matrix[i, j]
                 delta_gamma_d = self.delta_gamma_d_matrix[i, j]
 
+                min_func = Functions.intpl_in_time_and_space_func(
+                    self.step,
+                    delta_a,
+                    delta_b,
+                    delta_gamma_a,
+                    delta_gamma_b,
+                    delta_gamma_c,
+                    delta_gamma_d)
+                max_func = Functions.intpl_in_time_and_space_func(
+                    self.step,
+                    -delta_a,
+                    -delta_b,
+                    -delta_gamma_a,
+                    -delta_gamma_b,
+                    -delta_gamma_c,
+                    -delta_gamma_d)
 
+                x0 = [
+                    float(j) * self.step,
+                    self.xlist[i],
+                    alpha_range[0],
+                    beta_range[0]]
+                bnds = ((float(j) * self.step,
+                         float(j + 1) * self.step),
+                        (self.xlist[i],
+                         self.xlist[i + 1]),
+                        (alpha_range[0],
+                         alpha_range[1]),
+                        (beta_range[0],
+                         beta_range[1]))
+                min_res = minimize(
+                    min_func, x0, method='TNC', bounds=bnds, tol=1e-10)
+                max_res = minimize(
+                    max_func, x0, method='TNC', bounds=bnds, tol=1e-10)
 
+                if min_res.status == 0:
+                    min_matrix[j, i] = min_res.fun
+                    min_points_matrix[j, i] = min_res.x
+                else:
+                    raise ValueError(
+                        'Minimization for interpolation function fail!')
 
+                if max_res.status == 0:
+                    max_matrix[j, i] = max_res.fun
+                    max_points_matrix[j, i] = max_res.x
+                else:
+                    raise ValueError(
+                        'Maximization for interpolation function fail')
+
+            return min_matrix, min_points_matrix, max_matrix, max_points_matrix
 
 
 class Interpolation(object):

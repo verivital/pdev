@@ -25,16 +25,14 @@ if __name__ == '__main__':
     mass_matrix = FEM.mass_assembler(mesh_points)    # compute mass matrix M
     stiff_matrix = FEM.stiff_assembler(mesh_points)    # compute stiff matrix S
 
-    fc = [1.0, 0.0, 2.0]    # define input function f
-    fdom = [0.5, 1.0]    # domain of input function
-    load_vector = FEM.load_assembler(
-        mesh_points, fc, fdom)    # compute load vector
+    step = 0.1    # time step of FEM
+    x_dom = [0.5, 1.0]    # domain of input function
+    load_vector = FEM.load_assembler(mesh_points, x_dom, step)    # compute load vector
 
     print "\nmass matrix = \n{}".format(mass_matrix.todense())
     print "\nstiff matrix = \n{}".format(stiff_matrix.todense())
     print "\nload vector = \n{}".format(load_vector.todense())
 
-    step = 0.1    # time step of FEM
     A, b = FEM.get_ode(mass_matrix, stiff_matrix, load_vector,
                        step)    # get the discreted ODE model
 
