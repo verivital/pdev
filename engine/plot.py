@@ -5,7 +5,7 @@ Dung Tran: Nov/2017
 
 from matplotlib.patches import Rectangle
 from matplotlib.axes import Axes
-from engine.set import RectangleSet
+from engine.set import RectangleSet2D
 
 
 class Plot(object):
@@ -21,7 +21,7 @@ class Plot(object):
         assert isinstance(ax, Axes)
 
         for i in xrange(0, n):
-            assert isinstance(rectangle_set_list[i], RectangleSet)
+            assert isinstance(rectangle_set_list[i], RectangleSet2D)
 
         xmin = []
         xmax = []

@@ -9,9 +9,8 @@ from scipy.sparse import lil_matrix
 import numpy as np
 from engine.fem import Fem1D
 from engine.verifier import Verifier
-from engine.set import RectangleSet
+from engine.set import RectangleSet2D
 from engine.plot import Plot
-from engine.interpolation import Interpolation
 
 
 if __name__ == '__main__':
@@ -61,6 +60,9 @@ if __name__ == '__main__':
     intpl_set_inspace, intpl_set = verifier.get_interpolation_set(dPde, 10)
     print "\nlen of intpl_set_inspace = {}".format(len(intpl_set_inspace))
     print "\nlen of intpl_set = {}".format(len(intpl_set))
+
+    intpl_inspace_boxes_list = verifier.get_intpl_inspace_boxes(dPde, 10)
+    intpl_boxes_list = verifier.get_intpl_boxes(dPde, 10)
     #########################################################
     # test plot class
 
@@ -70,7 +72,7 @@ if __name__ == '__main__':
         ymin = float(i)
         xmax = float(i + 2)
         ymax = float(i + 2)
-        rect = RectangleSet()
+        rect = RectangleSet2D()
         rect.set_bounds(xmin, xmax, ymin, ymax)
         rectangle_set_list.append(rect)
 

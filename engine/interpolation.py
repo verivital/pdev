@@ -52,8 +52,8 @@ class InterpolSetInSpace(object):
         'find minimum value of U_n(x)'
 
         assert self.a_vec is not None and self.b_vec is not None and self.c_vec is not None and self.d_vec is not None
-        assert isinstance(alpha_range, list)
-        assert isinstance(beta_range, list)
+        assert isinstance(alpha_range, tuple)
+        assert isinstance(beta_range, tuple)
         assert len(alpha_range) == len(beta_range) == 2, 'invalid parameters'
         assert alpha_range[0] <= alpha_range[1]
         assert beta_range[0] <= beta_range[1]
@@ -65,26 +65,23 @@ class InterpolSetInSpace(object):
         c_vec = self.c_vec
         d_vec = self.d_vec
 
-        alpha_bounds = (alpha_range[0], alpha_range[1])
-        beta_bounds = (beta_range[0], beta_range[1])
-
         # minimum value of Un(x) at each segment
-        min_vec = np.zeros((n, 1), dtype=float)
+        min_vec = np.zeros((n,), dtype=float)
         # minimum points [x_min, alpha_min, beta_min]
         min_points = np.zeros((n, 3), dtype=float)
         # maximum value of Un(x) at each segment
-        max_vec = np.zeros((n, 1), dtype=float)
+        max_vec = np.zeros((n,), dtype=float)
         # maximum points [x_max, alpha_max, beta_max]
         max_points = np.zeros((n, 3), dtype=float)
 
         for i in xrange(0, n):
             min_func = Functions.intpl_inspace_func(
-                a_vec[i, 0], b_vec[i, 0], c_vec[i, 0], d_vec[i, 0])
+                a_vec[i], b_vec[i], c_vec[i], d_vec[i])
             max_func = Functions.intpl_inspace_func(
-                -a_vec[i, 0], -b_vec[i, 0], -c_vec[i, 0], -d_vec[i, 0])
+                -a_vec[i], -b_vec[i], -c_vec[i], -d_vec[i])
             xbounds = (self.xlist[i], self.xlist[i + 1])
             x0 = [self.xlist[i], alpha_range[0], beta_range[0]]
-            bnds = (xbounds, alpha_bounds, beta_bounds)
+            bnds = (xbounds, alpha_range, beta_range)
 
             min_res = minimize(
                 min_func,
@@ -100,13 +97,13 @@ class InterpolSetInSpace(object):
                 tol=1e-10)
 
             if min_res.status == 0:
-                min_vec[i, 0] = min_res.fun
+                min_vec[i] = min_res.fun
                 min_points[i, :] = min_res.x
             else:
                 raise ValueError('min-optimization fail')
 
             if max_res.status == 0:
-                max_vec[i, 0] = -max_res.fun
+                max_vec[i] = -max_res.fun
                 max_points[i, :] = max_res.x
             else:
                 raise ValueError('max-optimization fail')
@@ -310,7 +307,6 @@ class Interpolation(object):
             step, cur_time_step, prev_intpl_inspace_set, cur_intpl_inspace_set):
         'incrementally doing interpolation'
 
-        print "\nhello here"
         assert isinstance(prev_intpl_inspace_set, InterpolSetInSpace)
         assert isinstance(cur_intpl_inspace_set, InterpolSetInSpace)
         assert cur_intpl_inspace_set.xlist == prev_intpl_inspace_set.xlist, 'inconsistent data'

@@ -19,6 +19,8 @@ class DPdeAutomaton(object):
         self.xlist = None
         self.init_vector = None
         self.perturbation = None
+        self.alpha_range = None
+        self.beta_range = None
         self.unsafe_set = None
 
     def set_dynamics(self, matrix_a, vector_b, init_vector, xlist, time_step):
@@ -87,6 +89,8 @@ class DPdeAutomaton(object):
             alpha_beta_vector.tocsc())
 
         self.perturbation = per_set
+        self.alpha_range = (alpha_beta_range[0, 0], alpha_beta_range[1, 0])
+        self.beta_range = (alpha_beta_range[0, 1], alpha_beta_range[1, 1])
 
         return self.perturbation
 

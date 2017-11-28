@@ -5,7 +5,7 @@ Dung Tran: Nov/2017
 
 from scipy.sparse import csc_matrix, hstack, vstack
 from engine.pde_automaton import DPdeAutomaton
-from engine.set import DReachSet, GeneralSet
+from engine.set import DReachSet, GeneralSet, RectangleSet2D, RectangleSet3D
 from engine.interpolation import Interpolation
 
 
@@ -162,3 +162,56 @@ class Verifier(object):
                 self.to_cur_step_intpl_set.append(cur_intpl_set)
 
         return self.to_cur_step_intpl_inspace_set, self.to_cur_step_intpl_set
+
+    def get_intpl_inspace_boxes(self, dPde, toTimeStep):
+        'get boxes containing interpolation inspace set U_n(x) at time step t = n * step'
+
+        assert isinstance(dPde, DPdeAutomaton)
+        self.get_interpolation_set(dPde, toTimeStep)
+        assert dPde.alpha_range is not None and dPde.beta_range is not None, 'set range for alpha and beta'
+        n = len(self.to_cur_step_intpl_inspace_set)
+
+        boxes_list = []    # list of boxes along time step
+
+        for j in xrange(0, n):
+            intpl_inspace_set = self.to_cur_step_intpl_inspace_set[j]
+            u_min_vec, _, u_max_vec, _ = intpl_inspace_set.get_min_max(
+                dPde.alpha_range, dPde.beta_range)
+
+            boxes = []    # list of boxes along space step
+            for i in xrange(0, u_min_vec.shape[0]):
+                rect = RectangleSet2D()
+                rect.set_bounds(dPde.xlist[i], dPde.xlist[i + 1], u_min_vec[i], u_max_vec[i])
+                boxes.append(rect)
+
+            boxes_list.append(boxes)
+
+        return boxes_list
+
+    def get_intpl_boxes(self, dPde, toTimeStep):
+        'get boxes containing interpolation set U(x,t)'
+
+        assert isinstance(dPde, DPdeAutomaton)
+        self.get_interpolation_set(dPde, toTimeStep)
+        assert dPde.alpha_range is not None and dPde.beta_range is not None, 'set range for alpha and beta'
+        n = len(self.to_cur_step_intpl_set)
+
+        boxes_list = []
+
+        for j in xrange(0, n):
+            intpl_set = self.to_cur_step_intpl_set[j]
+            u_min_vec, _, u_max_vec, _ = intpl_set.get_min_max(dPde.alpha_range, dPde.beta_range)
+
+            boxes = []    # list of boxes along space step
+            for i in xrange(0, u_min_vec.shape[0]):
+                rect3d = RectangleSet3D()
+                xmin = dPde.xlist[i]
+                xmax = dPde.xlist[i + 1]
+                ymin = float(j) * dPde.time_step
+                ymax = float(j + 1) * dPde.time_step
+                rect3d.set_bounds(xmin, xmax, ymin, ymax, u_min_vec[i], u_max_vec[i])
+                boxes.append(rect3d)
+
+            boxes_list.append(boxes)
+
+        return boxes_list
