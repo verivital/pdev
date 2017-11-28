@@ -55,6 +55,24 @@ class GeneralSet(object):
         return res
 
 
+class LineSet(object):
+    'Line Set'
+
+    def __init__(self):
+        self.xmin = None
+        self.xmax = None
+
+    def set_bounds(self, xmin, xmax):
+        'specify a segment'
+
+        assert isinstance(xmin, float)
+        assert isinstance(xmax, float)
+
+        assert xmin < xmax, 'invalid set, xmin = {} is not < than xmax = {}'.format(xmin, xmax)
+        self.xmin = xmin
+        self.xmax = xmax
+
+
 class RectangleSet2D(object):
     'Rectangle Set'
 

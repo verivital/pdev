@@ -27,6 +27,8 @@ class Verifier(object):
         self.current_constraints = None
         self.unsafe_trace = []    # trace for unsafe case of discrete Pdeautomaton
 
+        self.to_current_step_line_set = []
+
         # use for computing and checking interpolation set (piecewise
         # continuous in space and time)
         self.status_cont = None

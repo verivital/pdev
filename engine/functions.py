@@ -176,6 +176,23 @@ class Functions(object):
 
         return my_func
 
+    @staticmethod
+    def U_n_i_func(V_n_i, l_n_i):
+        'U_n,i is numerical value of U(x,t) at exactly mesh point x[i] and step n'
+
+        # U_n_i_func is a function of pertubation parameter alpha and beta
+        assert isinstance(V_n_i, float)
+        assert isinstance(l_n_i, float)
+
+        func = Function('func')
+        func = alpha * V_n_i + beta * l_n_i
+        func_eval = lambdify((alpha, beta), func)
+
+        def my_func(y):
+            return func_eval(*tuple(y))
+
+        return func, my_func
+
 
 if __name__ == '__main__':
 

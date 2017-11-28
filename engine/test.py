@@ -66,15 +66,7 @@ if __name__ == '__main__':
     #########################################################
     # test plot class
 
-    rectangle_set_list = []
-    for i in xrange(0, 3):
-        xmin = float(i)
-        ymin = float(i)
-        xmax = float(i + 2)
-        ymax = float(i + 2)
-        rect = RectangleSet2D()
-        rect.set_bounds(xmin, xmax, ymin, ymax)
-        rectangle_set_list.append(rect)
+    rectangle_set_list = intpl_inspace_boxes_list[5]    # plot at 5-step
 
     fig = plt.figure()
     ax = fig.add_subplot(111)
