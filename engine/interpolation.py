@@ -3,9 +3,7 @@ This module implements interpolation class and its methods
 Dung Tran: Nov/2017
 '''
 
-import math
 import numpy as np
-from engine.set import DReachSet
 from engine.functions import Functions
 from scipy.optimize import minimize
 
@@ -144,7 +142,8 @@ class InterpolationSet(object):
         'set values for the set'
 
         assert isinstance(step, float)
-        assert isinstance(cur_time_step, int) and cur_time_step >= 1, 'invalid current_time_step'
+        assert isinstance(
+            cur_time_step, int) and cur_time_step >= 1, 'invalid current_time_step'
         assert step > 0, 'invalid time step'
         assert isinstance(delta_a_vec, np.ndarray)
         assert isinstance(delta_b_vec, np.ndarray)
@@ -178,8 +177,10 @@ class InterpolationSet(object):
         'find minimum and maximum values of interpolation set U(x, t)'
 
         assert self.delta_a_vec is not None, 'empty interpolation set'
-        assert isinstance(alpha_range, tuple) and len(alpha_range) == 2 and alpha_range[0] <= alpha_range[1], 'invalid alpha_range'
-        assert isinstance(beta_range, tuple) and len(beta_range) == 2 and beta_range[0] <= beta_range[1], 'invalid beta_range'
+        assert isinstance(alpha_range, tuple) and len(
+            alpha_range) == 2 and alpha_range[0] <= alpha_range[1], 'invalid alpha_range'
+        assert isinstance(beta_range, tuple) and len(
+            beta_range) == 2 and beta_range[0] <= beta_range[1], 'invalid beta_range'
 
         m = self.delta_a_vec.shape[0]
         min_vec = np.zeros((m,), dtype=float)
@@ -188,27 +189,58 @@ class InterpolationSet(object):
         max_points = []
 
         for j in xrange(0, m):
-            min_func = Functions.intpl_in_time_and_space_func(self.step, self.delta_a_vec[j], self.delta_b_vec[j], self.delta_gamma_a_vec[j], self.delta_gamma_b_vec[j], self.delta_gamma_c_vec[j], self.delta_gamma_d_vec[j])
-            max_func = Functions.intpl_in_time_and_space_func(self.step, -self.delta_a_vec[j], -self.delta_b_vec[j], -self.delta_gamma_a_vec[j], -self.delta_gamma_b_vec[j], -self.delta_gamma_c_vec[j], -self.delta_gamma_d_vec[j])
+            min_func = Functions.intpl_in_time_and_space_func(
+                self.step,
+                self.delta_a_vec[j],
+                self.delta_b_vec[j],
+                self.delta_gamma_a_vec[j],
+                self.delta_gamma_b_vec[j],
+                self.delta_gamma_c_vec[j],
+                self.delta_gamma_d_vec[j])
+            max_func = Functions.intpl_in_time_and_space_func(self.step, -
+                                                              self.delta_a_vec[j], -
+                                                              self.delta_b_vec[j], -
+                                                              self.delta_gamma_a_vec[j], -
+                                                              self.delta_gamma_b_vec[j], -
+                                                              self.delta_gamma_c_vec[j], -
+                                                              self.delta_gamma_d_vec[j])
 
-            x0 = [(self.cur_time_step - 1) * self.step, self.xlist[j], alpha_range[0], beta_range[0]]
-            t_bnd = ((self.cur_time_step - 1) * self.step, self.cur_time_step * self.step)
+            x0 = [
+                (self.cur_time_step - 1) * self.step,
+                self.xlist[j],
+                alpha_range[0],
+                beta_range[0]]
+            t_bnd = (
+                (self.cur_time_step - 1) * self.step,
+                self.cur_time_step * self.step)
             x_bnd = (self.xlist[j], self.xlist[j + 1])
             bnds = (t_bnd, x_bnd, alpha_range, beta_range)
-            min_res = minimize(min_func, x0, method='TNC', bounds=bnds, tol=1e-10)
-            max_res = minimize(max_func, x0, method='TNC', bounds=bnds, tol=1e-10)
+            min_res = minimize(
+                min_func,
+                x0,
+                method='TNC',
+                bounds=bnds,
+                tol=1e-10)
+            max_res = minimize(
+                max_func,
+                x0,
+                method='TNC',
+                bounds=bnds,
+                tol=1e-10)
 
             if min_res.status == 0:
                 min_vec[j] = min_res.fun
                 min_points.append(min_res.x)
             else:
-                raise ValueError('minimization for interpolation function fail!')
+                raise ValueError(
+                    'minimization for interpolation function fail!')
 
             if max_res.status == 0:
                 max_vec[j] = -max_res.fun
                 max_points.append(max_res.x)
             else:
-                raise ValueError('maximization for interpolation function fail!')
+                raise ValueError(
+                    'maximization for interpolation function fail!')
 
         return min_vec, min_points, max_vec, max_points
 
@@ -274,9 +306,11 @@ class Interpolation(object):
         return interpol_inspace_set
 
     @staticmethod
-    def increm_interpolation(step, cur_time_step, prev_intpl_inspace_set, cur_intpl_inspace_set):
+    def increm_interpolation(
+            step, cur_time_step, prev_intpl_inspace_set, cur_intpl_inspace_set):
         'incrementally doing interpolation'
 
+        print "\nhello here"
         assert isinstance(prev_intpl_inspace_set, InterpolSetInSpace)
         assert isinstance(cur_intpl_inspace_set, InterpolSetInSpace)
         assert cur_intpl_inspace_set.xlist == prev_intpl_inspace_set.xlist, 'inconsistent data'

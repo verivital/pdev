@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     verifier = Verifier()
     toTimeStep = 10
-    reachable_set = verifier.compute_reach_set(
+    reachable_set = verifier.get_dreach_set(
         dPde, toTimeStep)    # compute reachable set
 
     direction_matrix = lil_matrix((1, dPde.matrix_a.shape[0]), dtype=float)
@@ -54,14 +54,13 @@ if __name__ == '__main__':
         direction_matrix.tocsc(),
         unsafe_vector.tocsc())    # set unsafe set
     print"\nSafety of discreted Pde:"
-    verifier.on_fly_check(dPde, 10)
+    verifier.on_fly_check_dPde(dPde, 10)
 
     ############################################################
     # test interpolation class
-    intpl = Interpolation()
-    intpl_inspace_list = intpl.interpolate_in_space_for_all_timesteps(mesh_points, reachable_set)
-    interpolation_set = intpl.interpolate_in_time_and_space(step, intpl_inspace_list)
-
+    intpl_set_inspace, intpl_set = verifier.get_interpolation_set(dPde, 10)
+    print "\nlen of intpl_set_inspace = {}".format(len(intpl_set_inspace))
+    print "\nlen of intpl_set = {}".format(len(intpl_set))
     #########################################################
     # test plot class
 

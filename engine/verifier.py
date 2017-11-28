@@ -6,6 +6,7 @@ Dung Tran: Nov/2017
 from scipy.sparse import csc_matrix, hstack, vstack
 from engine.pde_automaton import DPdeAutomaton
 from engine.set import DReachSet, GeneralSet
+from engine.interpolation import Interpolation
 
 
 class Verifier(object):
@@ -16,23 +17,34 @@ class Verifier(object):
 
     def __init__(self):
 
-        self.status = None    # 0=safe /1=unsafe
+        # use for computing and checking reach set of discrete Pde
+        self.status_dis = None    # 0=safe /1=unsafe
         self.current_V = None    # Vn = A^n * Vn-1, V0 = U0
         self.current_l = None    # ln = Sigma_[i=0 to i = n-1] (A^i * b)
-        self.to_current_step_set = []     # include all reach sets from 0 to current step
-        self.current_constraints = None    # current constraint to check safety based on discreted reach set
-        self.unsafe_trace = []    # trace for unsafe case
+        # include all reach sets of discrete Pde from 0 to current step
+        self.to_current_step_set = []
+        # current constraint to check safety based on discrete reach set
+        self.current_constraints = None
+        self.unsafe_trace = []    # trace for unsafe case of discrete Pdeautomaton
 
-    def compute_reach_set(self, dPde, toTimeStep):
-        'compute reach set of discreted PDE to the toTimeStep in specific direction'
+        # use for computing and checking interpolation set (piecewise
+        # continuous in space and time)
+        self.status_cont = None
+        # list of interpolation set in space upto current step
+        self.to_cur_step_intpl_inspace_set = []
+        # list of interpolation set in both time and space upto current step
+        self.to_cur_step_intpl_set = []
+
+    def get_dreach_set(self, dPde, toTimeStep):
+        'compute reach set of discrete PDE to the toTimeStep in specific direction'
 
         assert isinstance(toTimeStep, int)
         assert toTimeStep >= 0
         assert isinstance(dPde, DPdeAutomaton)
 
         current_set = DReachSet()
-        self.current_V = []
-        self.current_l = []
+        self.current_V = None
+        self.current_l = None
         self.to_current_step_set = []
 
         for i in xrange(0, toTimeStep + 1):
@@ -53,16 +65,16 @@ class Verifier(object):
 
         return self.to_current_step_set
 
-    def on_fly_check(self, dPde, toTimeStep):
-        'On-the-fly safety checking'
+    def on_fly_check_dPde(self, dPde, toTimeStep):
+        'On-the-fly safety checking for discrete Pde automaton '
 
         assert dPde.matrix_a is not None, 'specify dPde first'
         assert dPde.unsafe_set is not None, 'specify unsafe set first'
 
         direct_matrix = dPde.unsafe_set.matrix_c
         unsafe_vector = dPde.unsafe_set.vector_d
-        self.current_V = []
-        self.current_l = []
+        self.current_V = None
+        self.current_l = None
         per_set = dPde.perturbation
         per_matrix = per_set.matrix_c
         per_vector = per_set.vector_d
@@ -79,7 +91,8 @@ class Verifier(object):
                 inDirection_Current_l = direct_matrix * self.current_l
 
                 C1 = hstack([inDirection_Current_V, inDirection_Current_l])
-                constraint_matrix = vstack([C1, per_matrix])    # construct constrains for current step
+                # construct constrains for current step
+                constraint_matrix = vstack([C1, per_matrix])
 
             else:
                 self.current_V = dPde.matrix_a * self.current_V
@@ -96,22 +109,56 @@ class Verifier(object):
             # check feasible of current constraint
             feasible_res = current_constraints.check_feasible()
             if feasible_res.status == 2:
-                self.status = 0    # discreted pde system is safe
+                self.status_dis = 0    # discreted pde system is safe
             elif feasible_res.status == 0:
-                self.status = 1    # discreted pde system is unsafe
+                self.status_dis = 1    # discreted pde system is unsafe
             elif feasible_res == 1:
-                self.status = 2    # iteration limit reached
+                self.status_dis = 2    # iteration limit reached
             elif feasible_res == 3:
-                self.status = 3    # problem appears to be unbounded
+                self.status_dis = 3    # problem appears to be unbounded
 
-            if self.status == 0:
+            if self.status_dis == 0:
                 print"\nTimeStep {}: SAFE".format(i)
-            elif self.status == 1:
+            elif self.status_dis == 1:
                 print"\nTimeStep {}: UNSAFE".format(i)
                 feasible_alpha = feasible_res.x[0, 0]
                 feasible_beta = feasible_res.x[0, 1]
                 vector_u0 = dPde.init_vector.multiply(feasible_alpha)
                 vector_b0 = dPde.vector_b.multiply(feasible_beta)
-                self.unsafe_trace = dPde.get_trace(vector_b0, vector_u0, i)    # produce a trace lead dPde to unsafe region
+                # produce a trace lead dPde to unsafe region
+                self.unsafe_trace = dPde.get_trace(vector_b0, vector_u0, i)
             else:
                 print"\nTimeStep{}: Error in checking safe/unsafe"
+
+    def get_interpolation_set(self, dPde, toTimeStep):
+        'compute interpolation set to toTimeStep'
+
+        assert isinstance(toTimeStep, int)
+        assert toTimeStep >= 1
+        assert isinstance(dPde, DPdeAutomaton)
+
+        self.current_V = None
+        self.current_l = None
+
+        for i in xrange(0, toTimeStep + 1):
+
+            # get interpolation set in space
+            if i == 0:
+                self.current_V = dPde.init_vector
+                self.current_l = csc_matrix(
+                    (dPde.init_vector.shape[0], 1), dtype=float)
+            else:
+                self.current_V = dPde.matrix_a * self.current_V
+                self.current_l = dPde.vector_b + dPde.matrix_a * self.current_l
+
+            cur_intpl_inspace_set = Interpolation.interpolate_in_space(
+                dPde.xlist, self.current_V.todense(), self.current_l.todense())
+            self.to_cur_step_intpl_inspace_set.append(cur_intpl_inspace_set)
+
+            # get interpolation set in both time and space
+            if i >= 1:
+                cur_intpl_set = Interpolation.increm_interpolation(
+                    dPde.time_step, i, self.to_cur_step_intpl_inspace_set[i - 1], self.to_cur_step_intpl_inspace_set[i])
+                self.to_cur_step_intpl_set.append(cur_intpl_set)
+
+        return self.to_cur_step_intpl_inspace_set, self.to_cur_step_intpl_set
