@@ -5,8 +5,11 @@ Dung Tran: Nov/2017
 
 from matplotlib.patches import Rectangle
 from matplotlib.axes import Axes
-from engine.set import RectangleSet2D
+from engine.set import RectangleSet2D, RectangleSet3D
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+from mpl_toolkits.mplot3d.axes3d import Axes3D
+import numpy as np
+
 
 class Plot(object):
     'implements methods for ploting different kind of set'
@@ -100,4 +103,74 @@ class Plot(object):
     def plot_3d_boxes(ax, boxes_list, facecolor, linewidth, edgecolor):
         'plot 3d boxes contain reachable set'
 
-        pass
+        assert isinstance(boxes_list, list)
+        assert isinstance(ax, Axes3D)
+
+        for box in boxes_list:
+            assert isinstance(box, RectangleSet3D)
+            xmin = box.xmin
+            xmax = box.xmax
+            ymin = box.ymin
+            ymax = box.ymax
+            zmin = box.zmin
+            zmax = box.zmax
+            p1 = [xmin, ymin, zmin]
+            p2 = [xmin, ymin, zmax]
+            p3 = [xmin, ymax, zmin]
+            p4 = [xmin, ymax, zmax]
+            p5 = [xmax, ymin, zmin]
+            p6 = [xmax, ymin, zmax]
+            p7 = [xmax, ymax, zmin]
+            p8 = [xmax, ymax, zmax]
+            V = np.array([p1, p2, p3, p4, p5, p6, p7, p8])
+            ax.scatter3D(V[:, 0], V[:, 1], V[:, 2])
+            verts = [
+                [
+                    V[0], V[1], V[6], V[4]], [
+                    V[0], V[2], V[6], V[4]], [
+                    V[0], V[1], V[3], V[2]], [
+                    V[4], V[5], V[7], V[6]], [
+                        V[2], V[3], V[7], V[6]], [
+                            V[1], V[3], V[7], V[5]]]
+
+            ax.add_collection3d(
+                Poly3DCollection(
+                    verts,
+                    facecolors=facecolor,
+                    linewidths=linewidth,
+                    edgecolors=edgecolor))
+
+        x_min_list = []
+        x_max_list = []
+        y_min_list = []
+        y_max_list = []
+        z_min_list = []
+        z_max_list = []
+
+        for box in boxes_list:
+            x_min_list.append(box.xmin)
+            x_max_list.append(box.xmax)
+            y_min_list.append(box.ymin)
+            y_max_list.append(box.ymax)
+            z_min_list.append(box.zmin)
+            z_max_list.append(box.zmax)
+
+        x_min_list.sort()
+        x_max_list.sort()
+        y_min_list.sort()
+        y_max_list.sort()
+        z_min_list.sort()
+        z_max_list.sort()
+
+        min_x = x_min_list[0]
+        max_x = x_max_list[len(x_max_list) - 1]
+        min_y = y_min_list[0]
+        max_y = y_max_list[len(y_max_list) - 1]
+        min_z = z_min_list[0]
+        max_z = z_max_list[len(z_max_list) - 1]
+
+        ax.set_xlim(min_x - 0.1 * abs(min_x), max_x + 0.1 * abs(max_x))
+        ax.set_ylim(min_y - 0.1 * abs(min_y), max_y + 0.1 * abs(max_y))
+        ax.set_ylim(min_z - 0.1 * abs(min_z), max_z + 0.1 * abs(max_z))
+
+        return ax

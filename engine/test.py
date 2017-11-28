@@ -66,8 +66,13 @@ if __name__ == '__main__':
     #########################################################
     # test plot class
 
-    rectangle_set_list = intpl_inspace_boxes_list[5]    # plot at 5-step
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot(111, projection='3d')
+    pl2 = Plot()
+    ax2 = pl2.plot_3d_boxes(ax2, intpl_boxes_list[1], facecolor='cyan', linewidth=1, edgecolor='r')
+    plt.show()
 
+    rectangle_set_list = intpl_inspace_boxes_list[5]    # plot at 5-step
     fig = plt.figure()
     ax = fig.add_subplot(111)
     pl = Plot()
