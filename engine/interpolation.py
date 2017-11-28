@@ -129,156 +129,88 @@ class InterpolationSet(object):
 
     def __init__(self):
         self.step = None
+        self.cur_time_step = None
         self.xlist = None
-        # [delta_a_i,j], i = 1, .., m (space step) and j = 1, ..., n (time step)
-        self.delta_a_matrix = None
-        self.delta_gamma_a_matrix = None
-        # [delta_b_i,j], i = 1, .., m (space step) and j = 1, ..., n (time step)
-        self.delta_b_matrix = None
-        self.delta_gamma_b_matrix = None
-        # [delta_gamma_c_i,j], i = 1, .., m (space step) and j = 1, ..., n (time step)
-        self.delta_gamma_c_matrix = None
-        # [delta_gamma_d_i,j], i = 1, .., m (space step) and j = 1, ..., n (time step)
-        self.delta_gamma_d_matrix = None
+        self.delta_a_vec = None
+        self.delta_gamma_a_vec = None
+        self.delta_b_vec = None
+        self.delta_gamma_b_vec = None
+        self.delta_gamma_c_vec = None
+        self.delta_gamma_d_vec = None
 
-    def set_values(self, step, xlist, delta_a_matrix, delta_b_matrix,
-                   delta_gamma_a_matrix, delta_gamma_b_matrix,
-                   delta_gamma_c_matrix, delta_gamma_d_matrix):
+    def set_values(self, step, cur_time_step, xlist, delta_a_vec, delta_b_vec,
+                   delta_gamma_a_vec, delta_gamma_b_vec,
+                   delta_gamma_c_vec, delta_gamma_d_vec):
         'set values for the set'
 
         assert isinstance(step, float)
+        assert isinstance(cur_time_step, int) and cur_time_step >= 1, 'invalid current_time_step'
         assert step > 0, 'invalid time step'
-        assert isinstance(delta_a_matrix, np.ndarray)
-        assert isinstance(delta_b_matrix, np.ndarray)
-        assert isinstance(delta_gamma_a_matrix, np.ndarray)
-        assert isinstance(delta_gamma_b_matrix, np.ndarray)
-        assert isinstance(delta_gamma_c_matrix, np.ndarray)
-        assert isinstance(delta_gamma_d_matrix, np.ndarray)
+        assert isinstance(delta_a_vec, np.ndarray)
+        assert isinstance(delta_b_vec, np.ndarray)
+        assert isinstance(delta_gamma_a_vec, np.ndarray)
+        assert isinstance(delta_gamma_b_vec, np.ndarray)
+        assert isinstance(delta_gamma_c_vec, np.ndarray)
+        assert isinstance(delta_gamma_d_vec, np.ndarray)
 
-        assert delta_a_matrix.shape == delta_b_matrix.shape == \
-            delta_gamma_a_matrix.shape == delta_gamma_b_matrix.shape == delta_gamma_c_matrix.shape == \
-            delta_gamma_d_matrix.shape, 'invalid data set'
+        assert delta_a_vec.shape == delta_b_vec.shape == \
+            delta_gamma_a_vec.shape == delta_gamma_b_vec.shape == delta_gamma_c_vec.shape == \
+            delta_gamma_d_vec.shape, 'invalid data set'
 
         assert isinstance(xlist, list)
         for i in xrange(0, len(xlist) - 1):
             assert xlist[i] < xlist[i + 1], 'invalid list'
 
-        assert len(xlist) == delta_a_matrix.shape[0] + \
+        assert len(xlist) == delta_a_vec.shape[0] + \
             1, 'inconsistency between xlist and matrices shapes'
 
         self.step = step
+        self.cur_time_step = cur_time_step
         self.xlist = xlist
-        self.delta_a_matrix = delta_a_matrix
-        self.delta_b_matrix = delta_b_matrix
-        self.delta_gamma_a_matrix = delta_gamma_a_matrix
-        self.delta_gamma_b_matrix = delta_gamma_b_matrix
-        self.delta_gamma_c_matrix = delta_gamma_c_matrix
-        self.delta_gamma_d_matrix = delta_gamma_d_matrix
+        self.delta_a_vec = delta_a_vec
+        self.delta_b_vec = delta_b_vec
+        self.delta_gamma_a_vec = delta_gamma_a_vec
+        self.delta_gamma_b_vec = delta_gamma_b_vec
+        self.delta_gamma_c_vec = delta_gamma_c_vec
+        self.delta_gamma_d_vec = delta_gamma_d_vec
 
-    def get_min_max(self, time_range, x_range, alpha_range, beta_range):
+    def get_min_max(self, alpha_range, beta_range):
         'find minimum and maximum values of interpolation set U(x, t)'
 
-        # We are interested in U(x,t) where:  x_range[0] <= x <= x_range[1],
-        # and t_range[0] <= t <= t_range[1]
+        assert self.delta_a_vec is not None, 'empty interpolation set'
+        assert isinstance(alpha_range, tuple) and len(alpha_range) == 2 and alpha_range[0] <= alpha_range[1], 'invalid alpha_range'
+        assert isinstance(beta_range, tuple) and len(beta_range) == 2 and beta_range[0] <= beta_range[1], 'invalid beta_range'
 
-        assert self.delta_a_matrix is not None, 'empty set'
+        m = self.delta_a_vec.shape[0]
+        min_vec = np.zeros((m,), dtype=float)
+        max_vec = np.zeros((m,), dtype=float)
+        min_points = []
+        max_points = []
 
-        assert isinstance(time_range, list)
-        assert isinstance(x_range, list)
-        assert len(x_range) == len(
-            time_range) == 2, 'invalid time range or invalid x_range'
-        assert isinstance(
-            time_range[0],
-            float) and isinstance(
-            time_range[1],
-            float)
+        for j in xrange(0, m):
+            min_func = Functions.intpl_in_time_and_space_func(self.step, self.delta_a_vec[j], self.delta_b_vec[j], self.delta_gamma_a_vec[j], self.delta_gamma_b_vec[j], self.delta_gamma_c_vec[j], self.delta_gamma_d_vec[j])
+            max_func = Functions.intpl_in_time_and_space_func(self.step, -self.delta_a_vec[j], -self.delta_b_vec[j], -self.delta_gamma_a_vec[j], -self.delta_gamma_b_vec[j], -self.delta_gamma_c_vec[j], -self.delta_gamma_d_vec[j])
 
-        assert isinstance(x_range[0], float) and isinstance(x_range[1], float)
-        assert x_range[0] >= self.xlist[0] and x_range[1] <= self.xlist[len(
-            self.xlist) - 1], 'invalid x range'
+            x0 = [(self.cur_time_step - 1) * self.step, self.xlist[j], alpha_range[0], beta_range[0]]
+            t_bnd = ((self.cur_time_step - 1) * self.step, self.cur_time_step * self.step)
+            x_bnd = (self.xlist[j], self.xlist[j + 1])
+            bnds = (t_bnd, x_bnd, alpha_range, beta_range)
+            min_res = minimize(min_func, x0, method='TNC', bounds=bnds, tol=1e-10)
+            max_res = minimize(max_func, x0, method='TNC', bounds=bnds, tol=1e-10)
 
-        # map time_range
-        time_start_point = int(math.floor(float(time_range[0]) / self.step))
-        time_stop_point = int(math.ceil(float(time_range[1]) / self.step))
-        assert time_start_point >= 0 and time_stop_point <= self.delta_a_matrix.shape[
-            1], 'invalid time range (> time range of computed reach set)'
+            if min_res.status == 0:
+                min_vec[j] = min_res.fun
+                min_points.append(min_res.x)
+            else:
+                raise ValueError('minimization for interpolation function fail!')
 
-        # map x_range
-        for i in xrange(len(self.xlist) - 1, 0, -1):
-            if x_range[0] <= self.xlist[i]:
-                x_start_point = i
+            if max_res.status == 0:
+                max_vec[j] = -max_res.fun
+                max_points.append(max_res.x)
+            else:
+                raise ValueError('maximization for interpolation function fail!')
 
-        for i in xrange(0, len(self.xlist)):
-            if x_range[1] >= self.xlist[i]:
-                x_stop_point = i
-
-        space_indx = x_stop_point - x_start_point + 1
-        time_indx = time_stop_point - time_start_point + 1
-
-        min_matrix = np.zeros((time_indx, space_indx), dtype=float)
-        max_matrix = np.zeros((time_indx, space_indx), dtype=float)
-        min_points_matrix = np.zeros((time_indx, space_indx), dtype=float)
-        max_points_matrix = np.zeros((time_indx, space_indx), dtype=float)
-
-        for j in xrange(time_start_point, time_stop_point):
-            for i in xrange(x_start_point, x_stop_point):
-                delta_a = self.delta_a_matrix[i, j]
-                delta_b = self.delta_b_matrix[i, j]
-                delta_gamma_a = self.delta_gamma_a_matrix[i, j]
-                delta_gamma_b = self.delta_gamma_b_matrix[i, j]
-                delta_gamma_c = self.delta_gamma_c_matrix[i, j]
-                delta_gamma_d = self.delta_gamma_d_matrix[i, j]
-
-                min_func = Functions.intpl_in_time_and_space_func(
-                    self.step,
-                    delta_a,
-                    delta_b,
-                    delta_gamma_a,
-                    delta_gamma_b,
-                    delta_gamma_c,
-                    delta_gamma_d)
-                max_func = Functions.intpl_in_time_and_space_func(
-                    self.step,
-                    -delta_a,
-                    -delta_b,
-                    -delta_gamma_a,
-                    -delta_gamma_b,
-                    -delta_gamma_c,
-                    -delta_gamma_d)
-
-                x0 = [
-                    float(j) * self.step,
-                    self.xlist[i],
-                    alpha_range[0],
-                    beta_range[0]]
-                bnds = ((float(j) * self.step,
-                         float(j + 1) * self.step),
-                        (self.xlist[i],
-                         self.xlist[i + 1]),
-                        (alpha_range[0],
-                         alpha_range[1]),
-                        (beta_range[0],
-                         beta_range[1]))
-                min_res = minimize(
-                    min_func, x0, method='TNC', bounds=bnds, tol=1e-10)
-                max_res = minimize(
-                    max_func, x0, method='TNC', bounds=bnds, tol=1e-10)
-
-                if min_res.status == 0:
-                    min_matrix[j, i] = min_res.fun
-                    min_points_matrix[j, i] = min_res.x
-                else:
-                    raise ValueError(
-                        'Minimization for interpolation function fail!')
-
-                if max_res.status == 0:
-                    max_matrix[j, i] = max_res.fun
-                    max_points_matrix[j, i] = max_res.x
-                else:
-                    raise ValueError(
-                        'Maximization for interpolation function fail')
-
-            return min_matrix, min_points_matrix, max_matrix, max_points_matrix
+        return min_vec, min_points, max_vec, max_points
 
 
 class Interpolation(object):
@@ -342,91 +274,42 @@ class Interpolation(object):
         return interpol_inspace_set
 
     @staticmethod
-    def interpolate_in_space_for_all_timesteps(xlist, dreachset_list):
-        'do interpolation in space for all time steps'
+    def increm_interpolation(step, cur_time_step, prev_intpl_inspace_set, cur_intpl_inspace_set):
+        'incrementally doing interpolation'
 
-        # we need to use to reachable set at all time steps to do interpolation
+        assert isinstance(prev_intpl_inspace_set, InterpolSetInSpace)
+        assert isinstance(cur_intpl_inspace_set, InterpolSetInSpace)
+        assert cur_intpl_inspace_set.xlist == prev_intpl_inspace_set.xlist, 'inconsistent data'
 
-        assert isinstance(xlist, list)
-        for i in xrange(0, len(xlist) - 1):
-            assert xlist[i] < xlist[i + 1], 'invalid list'
+        assert isinstance(
+            cur_time_step, int) and cur_time_step >= 1, 'invalid current_time_step'
+        assert isinstance(step, float) and step > 0, 'invalid time step'
+        xlist = cur_intpl_inspace_set.xlist
+        delta_a_vec = cur_intpl_inspace_set.a_vec - prev_intpl_inspace_set.a_vec
+        delta_b_vec = cur_intpl_inspace_set.b_vec - prev_intpl_inspace_set.b_vec
+        delta_gamma_a_vec = np.multiply(
+            cur_intpl_inspace_set.a_vec, cur_time_step) - np.multiply(
+            prev_intpl_inspace_set.a_vec, cur_time_step - 1)
+        delta_gamma_b_vec = np.multiply(
+            cur_intpl_inspace_set.b_vec, cur_time_step) - np.multiply(
+            prev_intpl_inspace_set.b_vec, cur_time_step - 1)
+        delta_gamma_c_vec = np.multiply(
+            cur_intpl_inspace_set.c_vec, cur_time_step) - np.multiply(
+            prev_intpl_inspace_set.c_vec, cur_time_step - 1)
+        delta_gamma_d_vec = np.multiply(
+            cur_intpl_inspace_set.d_vec, cur_time_step) - np.multiply(
+            prev_intpl_inspace_set.d_vec, cur_time_step - 1)
 
-        assert isinstance(dreachset_list, list)
-        for dreachset in dreachset_list:
-            assert isinstance(
-                dreachset, DReachSet), 'invalid discreted reach set'
-
-        interpol_inspace_set_list = []
-        for dreachset in dreachset_list:
-            interpol_inspace_set_list.append(
-                Interpolation.interpolate_in_space(
-                    xlist, dreachset.Vn.todense(), dreachset.ln.todense()))
-
-        return interpol_inspace_set_list
-
-    @staticmethod
-    def interpolate_in_time_and_space(step, interpol_inspace_set_list):
-        'linear interpolation in time and space'
-
-        assert isinstance(step, float)
-        assert step > 0, 'invalid time step'
-        assert isinstance(interpol_inspace_set_list, list)
-        for interpol_set in interpol_inspace_set_list:
-            assert isinstance(interpol_set, InterpolSetInSpace)
-
-        n = len(interpol_inspace_set_list)    # number of time intervals
-        assert n > 0, 'empty interpolation set'
-        intpl_set_0 = interpol_inspace_set_list[0]
-        m = intpl_set_0.a_vec.shape[0]    # number of space intervals
-
-        delta_a_matrix = np.zeros((m, n), dtype=float)
-        delta_b_matrix = np.zeros((m, n), dtype=float)
-        delta_gamma_a_matrix = np.zeros((m, n), dtype=float)
-        delta_gamma_b_matrix = np.zeros((m, n), dtype=float)
-        delta_gamma_c_matrix = np.zeros((m, n), dtype=float)
-        delta_gamma_d_matrix = np.zeros((m, n), dtype=float)
-
-        for j in xrange(0, n - 1):
-            intpl_set_j = interpol_inspace_set_list[j]
-            intpl_set_j_plus_1 = interpol_inspace_set_list[j + 1]
-
-            delta_a_vec_j = intpl_set_j_plus_1.a_vec - intpl_set_j.a_vec
-            delta_b_vec_j = intpl_set_j_plus_1.b_vec - intpl_set_j.b_vec
-            gamma_a_vec_j = np.multiply(intpl_set_j.a_vec, float(j))
-            gamma_b_vec_j = np.multiply(intpl_set_j.b_vec, float(j))
-            gamma_a_vec_j_plus_1 = np.multiply(
-                intpl_set_j_plus_1.a_vec, float(j + 1))
-            gamma_b_vec_j_plus_1 = np.multiply(
-                intpl_set_j_plus_1.b_vec, float(j + 1))
-
-            delta_gamma_a_vec_j = gamma_a_vec_j_plus_1 - gamma_a_vec_j
-            delta_gamma_b_vec_j = gamma_b_vec_j_plus_1 - gamma_b_vec_j
-
-            gamma_c_vec_j = np.multiply(intpl_set_j.c_vec, float(j))
-            gamma_c_vec_j_plus_1 = np.multiply(
-                intpl_set_j_plus_1.c_vec, float(j + 1))
-            delta_gamma_c_vec_j = gamma_c_vec_j_plus_1 - gamma_c_vec_j
-            gamma_d_vec_j = np.multiply(intpl_set_j.d_vec, float(j))
-            gamma_d_vec_j_plus_1 = np.multiply(
-                intpl_set_j_plus_1.d_vec, float(j + 1))
-            delta_gamma_d_vec_j = gamma_d_vec_j_plus_1 - gamma_d_vec_j
-
-            delta_a_matrix[:, j] = delta_a_vec_j
-            delta_b_matrix[:, j] = delta_b_vec_j
-            delta_gamma_a_matrix[:, j] = delta_gamma_a_vec_j
-            delta_gamma_b_matrix[:, j] = delta_gamma_b_vec_j
-            delta_gamma_c_matrix[:, j] = delta_gamma_c_vec_j
-            delta_gamma_d_matrix[:, j] = delta_gamma_d_vec_j
-
-        interpolation_set = InterpolationSet()
-        interpolation_set.set_values(
+        intpl_set = InterpolationSet()
+        intpl_set.set_values(
             step,
-            intpl_set_0.xlist,
-            delta_a_matrix,
-            delta_b_matrix,
-            delta_gamma_a_matrix,
-            delta_gamma_b_matrix,
-            delta_gamma_c_matrix,
-            delta_gamma_d_matrix)
+            cur_time_step,
+            xlist,
+            delta_a_vec,
+            delta_b_vec,
+            delta_gamma_a_vec,
+            delta_gamma_b_vec,
+            delta_gamma_c_vec,
+            delta_gamma_d_vec)
 
-        return interpolation_set
+        return intpl_set
