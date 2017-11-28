@@ -6,7 +6,7 @@ Dung Tran: Nov/2017
 from matplotlib.patches import Rectangle
 from matplotlib.axes import Axes
 from engine.set import RectangleSet2D
-
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 class Plot(object):
     'implements methods for ploting different kind of set'
@@ -97,10 +97,7 @@ class Plot(object):
         return ax
 
     @staticmethod
-    def plot_interpolation_in_space(ux_list, x_list):
-        'plot interpolation set in each segment of x, i.e. u(x) where x[i] <= x <= x[i + 1]'
-
-        # we know a1 < = u(x[i]) <= b1 and a2 <= u(x[i + 1]) <= b2
-        # The set between x[i] and x[i + 1] is a linear interpolation of u(x[i]) and u(x[i + 1])
+    def plot_3d_boxes(ax, boxes_list, facecolor, linewidth, edgecolor):
+        'plot 3d boxes contain reachable set'
 
         pass
