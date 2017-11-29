@@ -86,15 +86,15 @@ class InterpolSetInSpace(object):
             min_res = minimize(
                 min_func,
                 x0,
-                method='TNC',
+                method='L-BFGS-B',
                 bounds=bnds,
-                tol=1e-10)
+                tol=1e-10, options={'disp': False})
             max_res = minimize(
                 max_func,
                 x0,
-                method='TNC',
+                method='L-BFGS-B',
                 bounds=bnds,
-                tol=1e-10)
+                tol=1e-10, options={'disp': False})
 
             if min_res.status == 0:
                 min_vec[i] = min_res.fun

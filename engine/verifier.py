@@ -54,19 +54,14 @@ class Verifier(object):
 
             if i == 0:
                 self.current_V = dPde.init_vector
-                self.current_l = csc_matrix(
-                    (dPde.init_vector.shape[0], 1), dtype=float)
-                current_set.set_reach_set(
-                    dPde.perturbation, self.current_V, self.current_l)
-                self.to_current_step_set.append(current_set)
+                self.current_l = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
             else:
                 self.current_V = dPde.matrix_a * self.current_V
                 current_vector_b = Fem1D.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, i)
                 dPde.set_vector_b(current_vector_b)
                 self.current_l = current_vector_b + dPde.matrix_a * self.current_l
-                current_set.set_reach_set(
-                    dPde.perturbation, self.current_V, self.current_l)
-                self.to_current_step_set.append(current_set)
+            current_set.set_reach_set(dPde.alpha_range, dPde.beta_range, self.current_V, self.current_l)
+            self.to_current_step_set.append(current_set)
 
         return self.to_current_step_set
 
