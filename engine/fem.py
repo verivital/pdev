@@ -7,10 +7,9 @@ Main references:
     2) The Finite Element Method: Theory, Implementation and Applications, Mats G. Larson, Fredirik Bengzon
 '''
 
-from scipy.sparse import lil_matrix, csc_matrix, linalg
-import numpy as np
-from engine.functions import Functions
+from scipy.sparse import lil_matrix, linalg
 from engine.pde_automaton import DPdeAutomaton
+from engine.functions import Functions
 
 
 class Fem1D(object):
@@ -106,7 +105,7 @@ class Fem1D(object):
         return stiff_matrix.tocsc()
 
     @staticmethod
-    def load_assembler(x, x_dom, time_step):
+    def load_assembler(x, x_dom, time_step, current_step):
         'compute load vector for 1D problem'
 
         # x is list of discretized mesh points for example x = [0 , 0.1, 0.2, .., 0.9, 1]
@@ -114,8 +113,8 @@ class Fem1D(object):
         # the input function is defined in engine.functions.Functions class
         # x_dom = [x1, x2] defines the domain where the input function effect,
         # t_dom = (0 <= t<= time_step))
-        # return [b_i] = integral (f * phi_i dx dt), ((x1 <= x <= x2), (0 <=
-        # t<= time_step))
+        # return [b_i] = integral (f * phi_i dx dt), ((x1 <= x <= x2), (t[n-1] <=
+        # t<= t[n]))
 
         assert isinstance(x, list)
         assert isinstance(x_dom, list)
@@ -134,6 +133,7 @@ class Fem1D(object):
                      1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i + 1], x[i])
 
         assert time_step > 0, 'invalid time_step'
+        assert isinstance(current_step, int)
 
         n = len(x)    # number of discretized variables
 
@@ -147,8 +147,9 @@ class Fem1D(object):
             elif 0 < i < n - 1:
                 seg_x = [x[i - 1], x[i], x[i + 1]]
 
-            b[i, 0] = Functions.integrate_input_func_mul_phi(
-                seg_x, x_dom, [0.0, time_step])
+            if current_step >= 1:
+                b[i, 0] = Functions.integrate_input_func_mul_phi(
+                    seg_x, x_dom, [float(current_step - 1) * time_step, time_step * current_step])
 
         return b.tocsc()
 
@@ -172,41 +173,23 @@ class Fem1D(object):
 
     @staticmethod
     def get_dPde_automaton(x, x_dom, time_step):
-        'produce discreted Pde automaton'
+        'initialize discreted Pde automaton'
 
         mass_mat = Fem1D.mass_assembler(x)
         stiff_mat = Fem1D.stiff_assembler(x)
-        load_vec = Fem1D.load_assembler(x, x_dom, time_step)
+        load_vec = Fem1D.load_assembler(x, x_dom, time_step, 0)
         init_vector = Fem1D.get_init_cond(x)
 
-        matrix_a = linalg.inv((mass_mat + stiff_mat.multiply(time_step / 2))) * \
-            (mass_mat - stiff_mat.multiply(time_step / 2))
-        vector_b = linalg.inv(mass_mat + stiff_mat.multiply(time_step / 2)) * load_vec
+        inv_b_matrix = linalg.inv(mass_mat + stiff_mat.multiply(time_step / 2))
 
+        matrix_a = inv_b_matrix * (mass_mat - stiff_mat.multiply(time_step / 2))
+        vector_b = inv_b_matrix * load_vec
         dPde = DPdeAutomaton()
-        dPde.set_dynamics(matrix_a, vector_b, init_vector, x, time_step)
+        dPde.set_matrix_a(matrix_a)
+        dPde.set_vector_b(vector_b)
+        dPde.set_inv_b_matrix(inv_b_matrix)
+        dPde.set_fxdom(x_dom)
+        dPde.set_init_condition(init_vector)
+        dPde.set_xlist_time_step(x, time_step)
 
         return mass_mat, stiff_mat, load_vec, init_vector, dPde
-
-    @staticmethod
-    def get_trace(matrix_a, vector_b, vector_u0, step, num_steps):
-        'produce a trace of the discreted ODE model'
-
-        u_list = []
-        times = np.linspace(0, step * num_steps, num_steps + 1)
-        print "\n times = {}".format(times)
-
-        n = len(times)
-
-        for i in xrange(0, n):
-            print "\ni={}".format(i)
-            if i == 0:
-                u_list.append(vector_u0)
-            else:
-                u_n_minus_1 = u_list[i - 1]
-                u_n = matrix_a * u_n_minus_1 + vector_b
-                u_list.append(u_n)
-
-            print "\n t = {} -> \n U =: \n{}".format(i * step, u_list[i].todense())
-
-        return u_list

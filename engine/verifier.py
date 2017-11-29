@@ -7,6 +7,7 @@ from scipy.sparse import csc_matrix, hstack, vstack
 from engine.pde_automaton import DPdeAutomaton
 from engine.set import DReachSet, GeneralSet, RectangleSet2D, RectangleSet3D
 from engine.interpolation import Interpolation
+from engine.fem import Fem1D
 
 
 class Verifier(object):
@@ -60,7 +61,9 @@ class Verifier(object):
                 self.to_current_step_set.append(current_set)
             else:
                 self.current_V = dPde.matrix_a * self.current_V
-                self.current_l = dPde.vector_b + dPde.matrix_a * self.current_l
+                current_vector_b = Fem1D.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, i)
+                dPde.set_vector_b(current_vector_b)
+                self.current_l = current_vector_b + dPde.matrix_a * self.current_l
                 current_set.set_reach_set(
                     dPde.perturbation, self.current_V, self.current_l)
                 self.to_current_step_set.append(current_set)
@@ -72,16 +75,14 @@ class Verifier(object):
 
         assert dPde.matrix_a is not None, 'specify dPde first'
         assert dPde.unsafe_set is not None, 'specify unsafe set first'
+        assert dPde.alpha_range is not None, 'specify range of perturbation first'
+        assert dPde.beta_range is not None, 'specify perturbation first'
 
         direct_matrix = dPde.unsafe_set.matrix_c
         unsafe_vector = dPde.unsafe_set.vector_d
         self.current_V = None
         self.current_l = None
-        per_set = dPde.perturbation
-        per_matrix = per_set.matrix_c
-        per_vector = per_set.vector_d
 
-        constraint_vector = vstack([unsafe_vector, per_vector])
         current_constraints = GeneralSet()
 
         for i in xrange(0, toTimeStep + 1):
@@ -92,24 +93,22 @@ class Verifier(object):
                 inDirection_Current_V = direct_matrix * self.current_V
                 inDirection_Current_l = direct_matrix * self.current_l
 
-                C1 = hstack([inDirection_Current_V, inDirection_Current_l])
-                # construct constrains for current step
-                constraint_matrix = vstack([C1, per_matrix])
-
             else:
                 self.current_V = dPde.matrix_a * self.current_V
-                self.current_l = dPde.vector_b + dPde.matrix_a * self.current_l
+                current_vector_b = Fem1D.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, i)
+                dPde.set_vector_b(current_vector_b)
+                self.current_l = current_vector_b + dPde.matrix_a * self.current_l
 
                 inDirection_Current_V = direct_matrix * self.current_V
                 inDirection_Current_l = direct_matrix * self.current_l
-                C1 = hstack([inDirection_Current_V, inDirection_Current_l])
-                constraint_matrix = vstack([C1, per_matrix])
 
-            current_constraints.set_constraints(
-                constraint_matrix.tocsc(), constraint_vector.tocsc())    # construct constraints for current step
+            print "\n V_{} = \n{}, \n l_{} = {}".format(i, self.current_V.todense(), i, self.current_l.todense())
+
+            constraint_matrix = hstack([inDirection_Current_V, inDirection_Current_l])
+            current_constraints.set_constraints(constraint_matrix, unsafe_vector)    # construct constraints for current step
 
             # check feasible of current constraint
-            feasible_res = current_constraints.check_feasible()
+            feasible_res = current_constraints.check_feasible(dPde.alpha_range, dPde.beta_range)
             if feasible_res.status == 2:
                 self.status_dis = 0    # discreted pde system is safe
             elif feasible_res.status == 0:
@@ -123,12 +122,12 @@ class Verifier(object):
                 print"\nTimeStep {}: SAFE".format(i)
             elif self.status_dis == 1:
                 print"\nTimeStep {}: UNSAFE".format(i)
-                feasible_alpha = feasible_res.x[0, 0]
-                feasible_beta = feasible_res.x[0, 1]
-                vector_u0 = dPde.init_vector.multiply(feasible_alpha)
-                vector_b0 = dPde.vector_b.multiply(feasible_beta)
+                feasible_alpha_beta = feasible_res.x
+                feasible_alpha = feasible_alpha_beta[0]
+                feasible_beta = feasible_alpha_beta[1]
+                print "\nalpha = {}, beta = {}".format(feasible_alpha, feasible_beta)
                 # produce a trace lead dPde to unsafe region
-                self.unsafe_trace = dPde.get_trace(vector_b0, vector_u0, i)
+                self.unsafe_trace = dPde.get_trace(feasible_alpha, feasible_beta, i)
             else:
                 print"\nTimeStep{}: Error in checking safe/unsafe"
 
@@ -151,7 +150,9 @@ class Verifier(object):
                     (dPde.init_vector.shape[0], 1), dtype=float)
             else:
                 self.current_V = dPde.matrix_a * self.current_V
-                self.current_l = dPde.vector_b + dPde.matrix_a * self.current_l
+                current_vector_b = Fem1D.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, i)
+                dPde.set_vector_b(current_vector_b)
+                self.current_l = current_vector_b + dPde.matrix_a * self.current_l
 
             cur_intpl_inspace_set = Interpolation.interpolate_in_space(
                 dPde.xlist, self.current_V.todense(), self.current_l.todense())

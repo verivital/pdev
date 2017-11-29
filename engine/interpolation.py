@@ -215,20 +215,22 @@ class InterpolationSet(object):
             min_res = minimize(
                 min_func,
                 x0,
-                method='TNC',
+                method='L-BFGS-B',
                 bounds=bnds,
-                tol=1e-10)
+                tol=1e-10, options={'disp': False})    # add options={'disp': True} to display optimization result
             max_res = minimize(
                 max_func,
                 x0,
-                method='TNC',
+                method='L-BFGS-B',
                 bounds=bnds,
-                tol=1e-10)
+                tol=1e-10, options={'disp': False})    # add  options={'disp': True} to display optimization result
 
             if min_res.status == 0:
                 min_vec[j] = min_res.fun
                 min_points.append(min_res.x)
             else:
+                print "\nmin_res.status = {}".format(min_res.status)
+                print "\nminimization message: {}".format(min_res.message)
                 raise ValueError(
                     'minimization for interpolation function fail!')
 
@@ -236,6 +238,8 @@ class InterpolationSet(object):
                 max_vec[j] = -max_res.fun
                 max_points.append(max_res.x)
             else:
+                print "\nmax_res.status = {}".format(max_res.status)
+                print "\nmaximization message: {}".format(max_res.message)
                 raise ValueError(
                     'maximization for interpolation function fail!')
 

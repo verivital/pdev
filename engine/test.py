@@ -9,7 +9,6 @@ from scipy.sparse import lil_matrix
 import numpy as np
 from engine.fem import Fem1D
 from engine.verifier import Verifier
-from engine.set import RectangleSet2D
 from engine.plot import Plot
 
 
@@ -28,19 +27,16 @@ if __name__ == '__main__':
     print "\nload vector = \n{}".format(load_vec.todense())
     print "\ninit vector = \n{}".format(init_vector.todense())
     print "\ndPde matrix_a = {}".format(dPde.matrix_a.todense())
-    print "\ndPde vector_b = {}".format(dPde.vector_b.todense())
 
-    # get trace with initial vector u0
-    u = FEM.get_trace(dPde.matrix_a, dPde.vector_b, init_vector, step=0.1, num_steps=4)
-
-    alpha_beta_range = np.array([[0, 1], [1, 1]])    # set perturbation range
-    perturbation = dPde.set_perturbation(alpha_beta_range)
+    alpha_range = (0.99, 1.01)
+    beta_range = (0.99, 1.01)
+    dPde.set_perturbation(alpha_range, beta_range)
 
     ########################################################
     # test verifier class
 
     verifier = Verifier()
-    toTimeStep = 10
+    toTimeStep = 2
     reachable_set = verifier.get_dreach_set(
         dPde, toTimeStep)    # compute reachable set
 
@@ -53,16 +49,16 @@ if __name__ == '__main__':
         direction_matrix.tocsc(),
         unsafe_vector.tocsc())    # set unsafe set
     print"\nSafety of discreted Pde:"
-    verifier.on_fly_check_dPde(dPde, 10)
+    verifier.on_fly_check_dPde(dPde, toTimeStep)
 
     ############################################################
     # test interpolation class
-    intpl_set_inspace, intpl_set = verifier.get_interpolation_set(dPde, 10)
+    intpl_set_inspace, intpl_set = verifier.get_interpolation_set(dPde, toTimeStep)
     print "\nlen of intpl_set_inspace = {}".format(len(intpl_set_inspace))
     print "\nlen of intpl_set = {}".format(len(intpl_set))
 
-    intpl_inspace_boxes_list = verifier.get_intpl_inspace_boxes(dPde, 10)
-    intpl_boxes_list = verifier.get_intpl_boxes(dPde, 10)
+    intpl_inspace_boxes_list = verifier.get_intpl_inspace_boxes(dPde, toTimeStep)
+    intpl_boxes_list = verifier.get_intpl_boxes(dPde, toTimeStep)
     #########################################################
     # test plot class
 

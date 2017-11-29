@@ -3,8 +3,10 @@ This module implements general set class and DReachSet class and their methods
 Dung Tran: Nov/2017
 '''
 
-from scipy.sparse import lil_matrix, csc_matrix, eye, vstack, hstack
-from scipy.optimize import linprog
+from scipy.sparse import lil_matrix, csc_matrix, vstack
+from scipy.optimize import linprog, minimize
+from engine.functions import Functions
+import numpy as np
 
 
 class GeneralSet(object):
@@ -32,7 +34,7 @@ class GeneralSet(object):
 
         return self.matrix_c, self.vector_d
 
-    def check_feasible(self):
+    def check_feasible(self, alpha_range, beta_range):
         'check feasible of the set'
 
         # todo: implements check feasible using glpk package for large sparse constraints
@@ -40,15 +42,13 @@ class GeneralSet(object):
 
         assert self.matrix_c is not None and self.vector_d is not None, 'empty set to check'
         min_vector = [1, 1]
-        alpha_bounds = (None, None)
-        beta_bounds = (None, None)
+        assert isinstance(alpha_range, tuple) and len(alpha_range) == 2 and alpha_range[0] <= alpha_range[1]
+        assert isinstance(beta_range, tuple) and len(beta_range) == 2 and beta_range[0] <= beta_range[1]
         res = linprog(
             min_vector,
             A_ub=self.matrix_c.todense(),
             b_ub=self.vector_d.todense(),
-            bounds=(
-                alpha_bounds,
-                beta_bounds),
+            bounds=(alpha_range, beta_range),
             options={
                 "disp": False})
 
@@ -142,31 +142,34 @@ class DReachSet(object):
 
     def __init__(self):
 
-        self.perturbation = None
+        self.alpha_range = None
+        self.beta_range = None
         self.Vn = None
         self.ln = None
 
-    def set_reach_set(self, perturbation_set, vector_Vn, vector_ln):
+    def set_reach_set(self, alpha_range, beta_range, vector_Vn, vector_ln):
         'set a specific set'
 
-        assert isinstance(perturbation_set, GeneralSet)
-        self.perturbation = perturbation_set
+        assert isinstance(alpha_range, tuple) and len(alpha_range) == 2 and alpha_range[0] <= alpha_range[1], 'invalid alpha_range'
+        assert isinstance(beta_range, tuple) and len(beta_range) == 2 and beta_range[0] <= beta_range[1], 'invalid beta range'
 
         assert isinstance(vector_Vn, csc_matrix)
         assert isinstance(vector_ln, csc_matrix)
         assert vector_Vn.shape[0] == vector_ln.shape[0], 'inconsistent between Vn and ln vectors'
         assert vector_Vn.shape[1] == vector_ln.shape[1] == 1, 'wrong dimensions for vector Vn and ln'
 
+        self.alpha_range = alpha_range
+        self.beta_range = beta_range
         self.Vn = vector_Vn
         self.ln = vector_ln
 
-    def range_reach_set(self, direction_matrix):
+    def get_min_max(self, direction_matrix):
         'compute range of reach set in a specific direction, i.e.,  x_min[i] <= x[i] <= x_max[i]'
 
         if self.Vn is None and self.ln is None:
             raise ValueError('empty set')
-        elif self.perturbation is None:
-            raise ValueError('specify perturbation to plot Reachable Set')
+        elif self.alpha_range is None or self.beta_range is None:
+            raise ValueError('perturbation has not yet specified')
 
         assert isinstance(direction_matrix, csc_matrix)
         assert direction_matrix.shape[1] == self.Vn.shape[0] == self.ln.shape[0], 'inconsistency between \
@@ -175,52 +178,46 @@ class DReachSet(object):
         inDirection_vector_Vn = direction_matrix * self.Vn
         inDirection_vector_ln = direction_matrix * self.ln
 
-        num_var = direction_matrix.shape[0]
-        indentity_mat = eye(num_var, dtype=float)
-        Aeq_mat = hstack(
-            [inDirection_vector_Vn, inDirection_vector_ln, -indentity_mat])
-        Beq_mat = csc_matrix((num_var + 2, 1), dtype=float)
+        n = inDirection_vector_Vn.shape[0]
+        min_vec = np.zeros((n,), dtype=float)
+        max_vec = np.zeros((n,), dtype=float)
+        min_points = []
+        max_points = []
+        for i in xrange(0, n):
+            min_func = Functions.U_n_i_func(inDirection_vector_Vn[i, 0], inDirection_vector_ln[i, 0])
+            max_func = Functions.U_n_i_func(-inDirection_vector_Vn[i, 0], inDirection_vector_ln[i, 0])
 
-        matrix_c = self.perturbation.matrix_c
-        vector_d = self.perturbation.vector_d
-        zero_mat = csc_matrix((num_var, num_var), dtype=float)
-        zero_vec = csc_matrix((num_var, 1), dtype=float)
-        Aub_mat = hstack([matrix_c, zero_mat])
-        Bub_mat = vstack([vector_d, zero_vec])
+            x0 = [self.alpha_range[0], self.beta_range[0]]
+            bnds = (self.alpha_range, self.beta_range)
+            min_res = minimize(
+                min_func,
+                x0,
+                method='L-BFGS-B',
+                bounds=bnds,
+                tol=1e-10, options={'disp': False})    # add options={'disp': True} to display optimization result
+            max_res = minimize(
+                max_func,
+                x0,
+                method='L-BFGS-B',
+                bounds=bnds,
+                tol=1e-10, options={'disp': False})    # add  options={'disp': True} to display optimization result
 
-        min_range = []    # = [xmin[1], xmin[2], ...xmin[num_var]]
-        max_range = []    # = [xmax[1], xmax[2], ...xmax[num_var]]
-
-        # compute min range
-        for i in xrange(0, num_var):
-            vector_c = lil_matrix((1, num_var + 2), dtype=float)
-            vector_c[0, i + 2] = 1
-            res = linprog(
-                vector_c.todense(),
-                A_ub=Aub_mat.todense(),
-                b_ub=Bub_mat.todense(),
-                A_eq=Aeq_mat.todense(),
-                b_eq=Beq_mat.todense())
-
-            if res.status == 0:
-                min_range.append(res.fun)
+            if min_res.status == 0:
+                min_vec[i] = min_res.fun
+                min_points.append(min_res.x)
             else:
-                print"\nInfeasible or Error when computing min range"
+                print "\nmin_res.status = {}".format(min_res.status)
+                print "\nminimization message: {}".format(min_res.message)
+                raise ValueError(
+                    'minimization for interpolation function fail!')
 
-        # compute max range
-        for i in xrange(0, num_var):
-            vector_c = lil_matrix((1, num_var + 2), dtype=float)
-            vector_c[0, i + 2] = -1
-            res = linprog(
-                vector_c.todense(),
-                A_ub=Aub_mat.todense(),
-                b_ub=Bub_mat.todense(),
-                A_eq=Aeq_mat.todense(),
-                b_eq=Beq_mat.todense())
-
-            if res.status == 0:
-                max_range.append(-res.fun)
+            if max_res.status == 0:
+                max_vec[i] = -max_res.fun
+                max_points.append(max_res.x)
             else:
-                print"\nInfeasible or Error when computing max range"
+                print "\nmax_res.status = {}".format(max_res.status)
+                print "\nmaximization message: {}".format(max_res.message)
+                raise ValueError(
+                    'maximization for interpolation function fail!')
 
-        return min_range, max_range
+        return min_vec, min_points, max_vec, max_points

@@ -71,7 +71,6 @@ class Functions(object):
         f, _ = Functions.input_func()
         phi, _ = Functions.phi(seg_x)
         func = f * phi
-        print "\nf_mul_phi = {}".format(func)
         return func, lambdify((x, t), func)
 
     @staticmethod

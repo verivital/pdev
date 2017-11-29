@@ -9,49 +9,77 @@ from engine.set import GeneralSet
 
 
 class DPdeAutomaton(object):
-    'discreted Pde automaton'
+    'discreted Pde automaton: U[n] = A * U[n-1] + b[n]'
 
     def __init__(self):
 
         self.matrix_a = None
-        self.vector_b = None
+        self.vector_b = []    # a list of vector bn corresponding to different time steps
+        self.inv_b_matrix = None    # use to compute vector b at each time step
+        self.f_xdom = None    # range of space that input function is affected.
+
         self.time_step = None
         self.xlist = None
         self.init_vector = None
-        self.perturbation = None
         self.alpha_range = None
         self.beta_range = None
         self.unsafe_set = None
 
-    def set_dynamics(self, matrix_a, vector_b, init_vector, xlist, time_step):
-        'set dynamic of discreted pde automaton'
-
+    def set_matrix_a(self, matrix_a):
+        'set matrix _a for DPde automaton'
         assert isinstance(matrix_a, csc_matrix)
         assert len(matrix_a.shape) == 2
+        self.matrix_a = matrix_a
+
+    def set_vector_b(self, vector_b):
+        'add new vector b into vector list, in general, different steps have different vector b'
+
         assert isinstance(vector_b, csc_matrix)
-        assert matrix_a.shape[0] == vector_b.shape[0], 'inconsistency between shapes of matrix_a and \
-        vector_b'
-        assert vector_b.shape[1] == 1, 'vector_b shape = {} # 1'.format(
-            vector_b.shape[1])
+        if self.matrix_a is not None:
+            assert self.matrix_a.shape[0] == vector_b.shape[0], 'inconsistency between shapes of matrix_a and vector_b'
+        self.vector_b.append(vector_b)
+
+    def set_inv_b_matrix(self, inv_b_matrix):
+        'store inv_b_matrix to compute vector b iteratively'
+
+        assert isinstance(inv_b_matrix, csc_matrix)
+        if self.matrix_a is not None:
+            assert inv_b_matrix.shape == self.matrix_a.shape, 'inconsistent inv_b_matrix'
+
+        self.inv_b_matrix = inv_b_matrix
+
+    def set_init_condition(self, init_vector):
+        'set initial condition'
 
         assert isinstance(init_vector, csc_matrix)
-        assert matrix_a.shape[0] == init_vector.shape[0], 'matrix_a and init_vector are inconsistent'
-        assert init_vector.shape[1] == 1
+        if self.matrix_a is not None:
+            assert self.matrix_a.shape[0] == init_vector.shape[0], 'inconsistent initial condition'
+        self.init_vector = init_vector
 
+    def set_xlist_time_step(self, xlist, time_step):
+        'set list of meshpoints and time step'
         assert isinstance(xlist, list)
-        assert len(xlist) >= 3, 'xlist should have at least three points'
+        assert len(xlist) >= 3, 'xlist should have at least three poibnts'
         for i in xrange(0, len(xlist) - 1):
             assert 0 <= xlist[i] < xlist[i + 1], 'invalid xlist'
 
-        assert (time_step > 0), 'time step k = {} should be >= 0'.format(time_step)
+        if self.matrix_a is not None:
+            assert len(xlist) == self.matrix_a.shape[0], 'inconsistent xlist'
 
-        self.matrix_a = matrix_a
-        self.vector_b = vector_b
-        self.init_vector = init_vector
+        assert (time_step > 0), 'time step k = {} should be >= 0'.format(time_step)
         self.xlist = xlist
         self.time_step = time_step
 
-    def set_perturbation(self, alpha_beta_range):
+    def set_fxdom(self, xdom):
+        'set range of space that input function f(x,t) is affected'
+
+        assert isinstance(xdom, list) and len(xdom) == 2, 'invalid domain of f(x,t)'
+        if self.xlist is not None:
+            assert xdom[0] >= self.xlist[0] and xdom[1] <= self.xlist[len(self.xlist) - 1]
+
+        self.f_xdom = xdom
+
+    def set_perturbation(self, alpha_range, beta_range):
         'set pertupation on input function f and initial function u0(x)'
 
         # we consider pertubation on input function f, and initial condition function u_0(x)
@@ -62,37 +90,10 @@ class DPdeAutomaton(object):
         # the actual load vector: beta * b
 
         # pertupation defined by a general set C * [alpha beta]^T <= d
-
-        assert isinstance(alpha_beta_range, np.ndarray)
-        assert alpha_beta_range.shape == (
-            2, 2), 'alpha_beta_range shape is incorrect'
-        assert alpha_beta_range[0, 0] <= alpha_beta_range[1,
-                                                          0], 'incorrect alpha range'
-        assert alpha_beta_range[0, 1] <= alpha_beta_range[1,
-                                                          1], 'incorrect beta range'
-
-        alpha_beta_matrix = lil_matrix((4, 2), dtype=float)
-        alpha_beta_matrix[0, 0] = -1
-        alpha_beta_matrix[1, 0] = 1
-        alpha_beta_matrix[2, 1] = -1
-        alpha_beta_matrix[3, 1] = 1
-
-        alpha_beta_vector = lil_matrix((4, 1), dtype=float)
-        alpha_beta_vector[0, 0] = alpha_beta_range[0, 0]
-        alpha_beta_vector[1, 0] = alpha_beta_range[0, 1]
-        alpha_beta_vector[2, 0] = alpha_beta_range[1, 0]
-        alpha_beta_vector[3, 0] = alpha_beta_range[1, 1]
-
-        per_set = GeneralSet()
-        per_set.set_constraints(
-            alpha_beta_matrix.tocsc(),
-            alpha_beta_vector.tocsc())
-
-        self.perturbation = per_set
-        self.alpha_range = (alpha_beta_range[0, 0], alpha_beta_range[1, 0])
-        self.beta_range = (alpha_beta_range[0, 1], alpha_beta_range[1, 1])
-
-        return self.perturbation
+        assert isinstance(alpha_range, tuple) and len(alpha_range) == 2 and alpha_range[0] <= alpha_range[1], 'invalid alpha_range'
+        assert isinstance(beta_range, tuple) and len(beta_range) == 2 and beta_range[0] <= beta_range[1], 'invalid beta_range'
+        self.alpha_range = alpha_range
+        self.beta_range = beta_range
 
     def set_unsafe_set(self, direction_matrix, unsafe_vector):
         'define the unsafe set of the automaton'
@@ -109,14 +110,12 @@ class DPdeAutomaton(object):
 
         return self.unsafe_set
 
-    def get_trace(self, vector_b0, vector_u0, num_steps):
-        'produce a trace of the discreted ODE model corresponding to initial vector vector_u0'
+    def get_trace(self, alpha_value, beta_value, num_steps):
+        'produce a trace of the discreted ODE model corresponding to specific values of alpha and beta'
 
         assert self.matrix_a is not None, 'empty dPde'
-        assert self.matrix_a.shape[0] == vector_b0.shape[0] == vector_u0.shape[0], 'inconsistency between \
-            matrix_a and vector_b0 and vector_u0'
-
-        assert vector_b0.shape[1] == 1 and vector_u0.shape[1] == 1, 'wrong shapes for vector_b0 or vector_u0'
+        assert isinstance(alpha_value, float)
+        assert isinstance(beta_value, float)
 
         u_list = []
         times = np.linspace(0, self.time_step * num_steps, num_steps + 1)
@@ -124,13 +123,15 @@ class DPdeAutomaton(object):
         n = len(times)
 
         for i in xrange(0, n):
-            print "\ni={}".format(i)
+
             if i == 0:
-                u_list.append(vector_u0)
+                current_V = self.init_vector
+                current_l = csc_matrix((self.init_vector.shape[0], 1), dtype=float)
             else:
-                u_n_minus_1 = u_list[i - 1]
-                u_n = self.matrix_a * u_n_minus_1 + vector_b0
-                u_list.append(u_n)
+                current_V = self.matrix_a * current_V
+                current_l = self.vector_b[i] + self.matrix_a * current_l
+
+            u_list.append(current_V.multiply(alpha_value) + current_l.multiply(beta_value))
 
             print "\n t = {} -> \n U =: \n{}".format(i * self.time_step, u_list[i].todense())
 
