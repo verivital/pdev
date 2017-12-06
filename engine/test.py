@@ -47,6 +47,9 @@ if __name__ == '__main__':
     dPde.set_unsafe_set(unsafe_mat.tocsc(), unsafe_vector.tocsc())
     verifier.on_fly_check_dPde(dPde, toTimeStep)
 
+    _, residual = verifier.compute_residul_r_u(dPde)
+    print"\nresidual r(u) = \n{}".format(residual)
+
     ############################################################
     # test interpolation class
     intpl_set_inspace, intpl_set = verifier.get_interpolation_set(dPde, toTimeStep)

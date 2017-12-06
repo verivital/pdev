@@ -3,7 +3,7 @@ This module implements continuous/discreted verifier for PDE automaton
 Dung Tran: Nov/2017
 '''
 
-from scipy.sparse import csc_matrix, hstack, vstack
+from scipy.sparse import csc_matrix, lil_matrix, hstack
 from engine.pde_automaton import DPdeAutomaton
 from engine.set import DReachSet, GeneralSet, RectangleSet2D, RectangleSet3D
 from engine.interpolation import Interpolation
@@ -28,6 +28,9 @@ class Verifier(object):
         # current constraint to check safety based on discrete reach set
         self.current_constraints = None
         self.unsafe_trace = []    # trace for unsafe case of discrete Pdeautomaton
+
+        # use for error analysis
+        self.residual_r_u = None
 
         # use for computing and checking interpolation set (piecewise
         # continuous in space and time)
@@ -212,3 +215,53 @@ class Verifier(object):
             boxes_list.append(boxes)
 
         return boxes_list
+
+    def compute_residul_r_u(self, dPde):
+        'get compute r(u) = beta * f - u, use later to compute the error reachable set'
+
+        assert isinstance(dPde, DPdeAutomaton)
+        assert self.to_current_step_set is not None, 'no discrete reach set to comput r(u) = beta * f - u'
+
+        n = len(self.to_current_step_set)
+        assert n >= 2, 'need at least two discrete reach set to compute r(u)'
+        residual_r_u = DReachSet()
+        dPde.residual_r_u = []    # reset list of residual
+
+        def get_V1_l1(V, l, xlist):
+            '\int (u_n(x) p_i(x))dx = alpha * V1 + beta * l1'
+
+            assert isinstance(V, csc_matrix)
+            assert isinstance(l, csc_matrix)
+            assert V.shape == l.shape
+            n = V.shape[0]
+            assert n == len(xlist) - 2
+
+            V1 = lil_matrix((n, 1), dtype=float)
+            l1 = lil_matrix((n, 1), dtype=float)
+            for i in xrange(0, n):
+                hi = xlist[i + 1] - xlist[i]
+                hi_plus_1 = xlist[i + 2] - xlist[i + 1]
+                if i == 0:
+                    V1[i, 0] = V[i, 0] * (hi / 3 + hi_plus_1 / 3) + V[i + 1, 0] * hi_plus_1 / 6
+                    l1[i, 0] = l[i, 0] * (hi / 3 + hi_plus_1 / 3) + l[i + 1, 0] * hi_plus_1 / 6
+                elif i == n - 1:
+                    V1[i, 0] = V[i, 0] * (hi / 3 + hi_plus_1 / 3) + V[i - 1, 0] * hi / 6
+                    l1[i, 0] = l[i, 0] * (hi / 3 + hi_plus_1 / 3) + l[i - 1, 0] * hi / 6
+                elif 0 < i < n - 1:
+                    V1[i, 0] = V[i, 0] * (hi / 3 + hi_plus_1 / 3) + V[i - 1, 0] * hi / 6 + V[i + 1, 0] * hi_plus_1 / 6
+                    l1[i, 0] = l[i, 0] * (hi / 3 + hi_plus_1 / 3) + l[i - 1, 0] * hi / 6 + l[i + 1, 0] * hi_plus_1 / 6
+
+            return V1, l1
+
+        for i in xrange(1, n):
+            prev_set = self.to_current_step_set[i - 1]
+            cur_set = self.to_current_step_set[i]
+
+            prev_V1, prev_l1 = get_V1_l1(prev_set.Vn, prev_set.ln, dPde.xlist)
+            cur_V1, cur_l1 = get_V1_l1(cur_set.Vn, cur_set.ln, dPde.xlist)
+
+            residual_r_u.Vn = prev_V1 - cur_V1
+            residual_r_u.ln = dPde.vector_b[i] + prev_l1 - cur_l1
+            dPde.residual_r_u.append(residual_r_u)
+
+        return dPde, dPde.residual_r_u
