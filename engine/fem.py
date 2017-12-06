@@ -33,20 +33,14 @@ class Fem1D(object):
                      1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i +
                                                                                1], x[i])
 
-        n = len(x)    # number of discretized variables
+        n = len(x) - 2    # number of discretized variables
         mass_matrix = lil_matrix((n, n), dtype=float)
 
         # filling mass_matrix
 
         for i in xrange(0, n):
-            if i == 0:
-                hi = 0
-            else:
-                hi = x[i] - x[i - 1]
-            if i + 1 > n - 1:
-                hi_plus_1 = 0
-            else:
-                hi_plus_1 = x[i + 1] - x[i]
+            hi = x[i + 1] - x[i]
+            hi_plus_1 = x[i + 2] - x[i + 1]
 
             mass_matrix[i, i] = hi / 3 + hi_plus_1 / 3
             if i + 1 <= n - 1:
@@ -74,28 +68,17 @@ class Fem1D(object):
                      1] > x[i], 'x[i + 1] = {} should be > x[i] = {}'.format(x[i +
                                                                                1], x[i])
 
-        n = len(x)    # number of discretized variables
+        n = len(x) - 2    # number of discretized variables
         stiff_matrix = lil_matrix((n, n), dtype=float)
 
         # filling stiff_matrix
 
         for i in xrange(0, n):
 
-            if i > 0:
-                hi = x[i] - x[i - 1]
-            else:
-                hi = 0
-            if i + 1 <= n - 1:
-                hi_plus_1 = x[i + 1] - x[i]
-            else:
-                hi_plus_1 = 0
+            hi = x[i + 1] - x[i]
+            hi_plus_1 = x[i + 2] - x[i + 1]
 
-            if i == 0:
-                stiff_matrix[i, i] = 1 / hi_plus_1
-            elif i == n - 1:
-                stiff_matrix[i, i] = 1 / hi
-            elif 0 < i < n - 1:
-                stiff_matrix[i, i] = 1 / hi + 1 / hi_plus_1
+            stiff_matrix[i, i] = 1 / hi + 1 / hi_plus_1
 
             if i + 1 <= n - 1:
                 stiff_matrix[i, i + 1] = -1 / hi_plus_1
@@ -135,18 +118,12 @@ class Fem1D(object):
         assert time_step > 0, 'invalid time_step'
         assert isinstance(current_step, int)
 
-        n = len(x)    # number of discretized variables
+        n = len(x) - 2    # number of discretized variables
 
         b = lil_matrix((n, 1), dtype=float)
 
         for i in xrange(0, n):
-            if i == 0:
-                seg_x = [x[0], x[0], x[1]]
-            elif i == n - 1:
-                seg_x = [x[i - 1], x[i], x[i]]
-            elif 0 < i < n - 1:
-                seg_x = [x[i - 1], x[i], x[i + 1]]
-
+            seg_x = [x[i], x[i + 1], x[i + 2]]
             if current_step >= 1:
                 b[i, 0] = Functions.integrate_input_func_mul_phi(
                     seg_x, x_dom, [float(current_step - 1) * time_step, time_step * current_step])
@@ -162,11 +139,11 @@ class Fem1D(object):
         assert isinstance(x, list)
         assert len(x) >= 3, 'len(x) = {} should be >= 3'.format(len(x))
 
-        n = len(x)
+        n = len(x) - 2
         u0 = lil_matrix((n, 1), dtype=float)
         _, init_func = Functions.init_func()
         for i in xrange(0, n):
-            v = x[i]
+            v = x[i + 1]
             u0[i, 0] = init_func(v)
 
         return u0.tocsc()
@@ -193,3 +170,19 @@ class Fem1D(object):
         dPde.set_xlist_time_step(x, time_step)
 
         return mass_mat, stiff_mat, load_vec, init_vector, dPde
+
+if __name__ == '__main__':
+    xlist = [0.0, 0.5, 1.0, 1.5, 2.0]
+    Fem = Fem1D()
+    M = Fem.mass_assembler(xlist)
+    print "\nmass matrix: \n{}".format(M.todense())
+    S = Fem.stiff_assembler(xlist)
+    print "\nstiff matrix:\n{}".format(S.todense())
+
+    k = 0.1
+    cur_step = 1
+    b = Fem.load_assembler(xlist, [0.1, 0.2], k, cur_step)
+    print "\nload vector:\n{}".format(b.todense())
+
+    init_vec = Fem.get_init_cond(xlist)
+    print "\ninit vector :\n{}".format(init_vec.todense())
