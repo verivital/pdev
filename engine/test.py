@@ -36,8 +36,7 @@ if __name__ == '__main__':
     verifier = Verifier()
     toTimeStep = 2
     dis_reachable_set = verifier.get_dreach_set(dPde, toTimeStep)    # compute discrete reachable set
-    reach_set_at_final_step = dis_reachable_set[toTimeStep]
-    dis_min_vec, _, dis_max_vec, _ = reach_set_at_final_step.get_min_max()
+    dis_min_vec, _, dis_max_vec, _ = dis_reachable_set[toTimeStep - 1].get_min_max()
 
     unsafe_mat = lil_matrix((1, dPde.matrix_a.shape[0]), dtype=float)
     unsafe_mat[0, dPde.matrix_a.shape[0] - 1] = 1
@@ -51,6 +50,7 @@ if __name__ == '__main__':
     print"\nresidual r(u) = \n{}".format(residual)
     dis_err_set = verifier.get_error_dreach_set(dPde)
     print"\nerror discrete reach set = \n{}".format(dis_err_set)
+    min_err_vec, _, max_err_vec, _ = dis_err_set[toTimeStep - 1].get_min_max()
 
     ############################################################
     # test interpolation class
