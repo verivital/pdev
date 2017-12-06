@@ -294,8 +294,10 @@ class Interpolation(object):
             elif 0 < i < n - 1:
                 a_n_vector[i] = (Vn[i, 0] - Vn[i - 1, 0]) / hi
                 b_n_vector[i] = (ln[i, 0] - ln[i - 1, 0]) / hi
-                c_n_vector[i] = (Vn[i - 1, 0] * xlist[i + 1] - Vn[i, 0] * xlist[i]) / hi
-                d_n_vector[i] = (ln[i - 1, 0] * xlist[i + 1] - ln[i, 0] * xlist[i]) / hi
+                c_n_vector[i] = (Vn[i - 1, 0] * xlist[i + 1] -
+                                 Vn[i, 0] * xlist[i]) / hi
+                d_n_vector[i] = (ln[i - 1, 0] * xlist[i + 1] -
+                                 ln[i, 0] * xlist[i]) / hi
 
             elif i == n - 1:
                 a_n_vector[i] = - Vn[i - 1, 0]
@@ -314,8 +316,7 @@ class Interpolation(object):
         return interpol_inspace_set
 
     @staticmethod
-    def increm_interpolation(
-            step, cur_time_step, prev_intpl_inspace_set, cur_intpl_inspace_set):
+    def increm_interpolation(step, cur_time_step, prev_intpl_inspace_set, cur_intpl_inspace_set):
         'incrementally doing interpolation'
 
         assert isinstance(prev_intpl_inspace_set, InterpolSetInSpace)
@@ -328,8 +329,7 @@ class Interpolation(object):
         xlist = cur_intpl_inspace_set.xlist
         delta_a_vec = cur_intpl_inspace_set.a_vec - prev_intpl_inspace_set.a_vec
         delta_b_vec = cur_intpl_inspace_set.b_vec - prev_intpl_inspace_set.b_vec
-        delta_gamma_a_vec = np.multiply(
-            cur_intpl_inspace_set.a_vec, cur_time_step) - np.multiply(
+        delta_gamma_a_vec = np.multiply(cur_intpl_inspace_set.a_vec, cur_time_step) - np.multiply(
             prev_intpl_inspace_set.a_vec, cur_time_step - 1)
         delta_gamma_b_vec = np.multiply(
             cur_intpl_inspace_set.b_vec, cur_time_step) - np.multiply(

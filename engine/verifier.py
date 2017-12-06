@@ -24,11 +24,10 @@ class Verifier(object):
         self.current_l = None    # ln = Sigma_[i=0 to i = n-1] (A^i * b)
         # include all reach sets of discrete Pde from 0 to current step
         self.to_current_step_set = []
+        self.to_current_step_line_set = []
         # current constraint to check safety based on discrete reach set
         self.current_constraints = None
         self.unsafe_trace = []    # trace for unsafe case of discrete Pdeautomaton
-
-        self.to_current_step_line_set = []
 
         # use for computing and checking interpolation set (piecewise
         # continuous in space and time)

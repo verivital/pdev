@@ -163,29 +163,20 @@ class DReachSet(object):
         self.Vn = vector_Vn
         self.ln = vector_ln
 
-    def get_min_max(self, direction_matrix):
-        'compute range of reach set in a specific direction, i.e.,  x_min[i] <= x[i] <= x_max[i]'
+    def get_min_max(self):
+        'compute range of discrete reach set, i.e.,  x_min[i] <= x[i] <= x_max[i]'
 
-        if self.Vn is None and self.ln is None:
-            raise ValueError('empty set')
-        elif self.alpha_range is None or self.beta_range is None:
-            raise ValueError('perturbation has not yet specified')
+        assert self.alpha_range is not None and self.beta_range is not None, 'set perturbation parameters'
+        assert self.Vn is not None and self.ln is not None, 'empty set to get min max'
 
-        assert isinstance(direction_matrix, csc_matrix)
-        assert direction_matrix.shape[1] == self.Vn.shape[0] == self.ln.shape[0], 'inconsistency between \
-            direction matrix and vector Vn and vector ln'
-
-        inDirection_vector_Vn = direction_matrix * self.Vn
-        inDirection_vector_ln = direction_matrix * self.ln
-
-        n = inDirection_vector_Vn.shape[0]
+        n = self.Vn.shape[0]
         min_vec = np.zeros((n,), dtype=float)
         max_vec = np.zeros((n,), dtype=float)
         min_points = []
         max_points = []
         for i in xrange(0, n):
-            min_func = Functions.U_n_i_func(inDirection_vector_Vn[i, 0], inDirection_vector_ln[i, 0])
-            max_func = Functions.U_n_i_func(-inDirection_vector_Vn[i, 0], inDirection_vector_ln[i, 0])
+            min_func = Functions.U_n_i_func(self.Vn[i, 0], self.ln[i, 0])
+            max_func = Functions.U_n_i_func(-self.Vn[i, 0], -self.ln[i, 0])
 
             x0 = [self.alpha_range[0], self.beta_range[0]]
             bnds = (self.alpha_range, self.beta_range)
@@ -209,7 +200,7 @@ class DReachSet(object):
                 print "\nmin_res.status = {}".format(min_res.status)
                 print "\nminimization message: {}".format(min_res.message)
                 raise ValueError(
-                    'minimization for interpolation function fail!')
+                    'minimization fail!')
 
             if max_res.status == 0:
                 max_vec[i] = -max_res.fun
@@ -218,6 +209,11 @@ class DReachSet(object):
                 print "\nmax_res.status = {}".format(max_res.status)
                 print "\nmaximization message: {}".format(max_res.message)
                 raise ValueError(
-                    'maximization for interpolation function fail!')
+                    'maximization fail!')
+
+        print "\nmin_vec = \n{}".format(min_vec)
+        print "\nmin_points = \n{}".format(min_points)
+        print "\nmax_vec = \n{}".format(max_vec)
+        print "\nmax_points = \n{}".format(max_points)
 
         return min_vec, min_points, max_vec, max_points

@@ -3,10 +3,8 @@ This is test file
 Dung Tran: Nov/2017
 '''
 
-import math
 import matplotlib.pyplot as plt
 from scipy.sparse import lil_matrix
-import numpy as np
 from engine.fem import Fem1D
 from engine.verifier import Verifier
 from engine.plot import Plot
@@ -37,19 +35,14 @@ if __name__ == '__main__':
 
     verifier = Verifier()
     toTimeStep = 2
-    reachable_set = verifier.get_dreach_set(
-        dPde, toTimeStep)    # compute reachable set
+    dis_reachable_set = verifier.get_dreach_set(dPde, toTimeStep)    # compute discrete reachable set
+    reach_set_at_final_step = dis_reachable_set[toTimeStep]
+    dis_min_vec, _, dis_max_vec, _ = reach_set_at_final_step.get_min_max()
 
-    direction_matrix = lil_matrix((1, dPde.matrix_a.shape[0]), dtype=float)
-    direction_matrix[0, math.ceil(dPde.matrix_a.shape[0] / 2)] = 1
     unsafe_vector = lil_matrix((1, 1), dtype=float)
     unsafe_vector[0, 0] = -1
 
-    dPde.set_unsafe_set(
-        direction_matrix.tocsc(),
-        unsafe_vector.tocsc())    # set unsafe set
-    print"\nSafety of discreted Pde:"
-    verifier.on_fly_check_dPde(dPde, toTimeStep)
+    #verifier.on_fly_check_dPde(dPde, toTimeStep)
 
     ############################################################
     # test interpolation class

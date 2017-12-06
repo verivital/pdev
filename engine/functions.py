@@ -190,7 +190,7 @@ class Functions(object):
         def my_func(y):
             return func_eval(*tuple(y))
 
-        return func, my_func
+        return my_func
 
 
 if __name__ == '__main__':
