@@ -25,8 +25,6 @@ class DPdeAutomaton(object):
         self.beta_range = None
         self.unsafe_set = None
 
-        self.residual_r_u = []    # a list of r(u) = \int \int (beta * f - \dot{u})
-
     def set_matrix_a(self, matrix_a):
         'set matrix _a for DPde automaton'
         assert isinstance(matrix_a, csc_matrix)

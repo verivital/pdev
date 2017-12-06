@@ -30,7 +30,8 @@ class Verifier(object):
         self.unsafe_trace = []    # trace for unsafe case of discrete Pdeautomaton
 
         # use for error analysis
-        self.residual_r_u = None
+        self.dis_err_set = []
+        self.residual_r_u = []
 
         # use for computing and checking interpolation set (piecewise
         # continuous in space and time)
@@ -262,6 +263,32 @@ class Verifier(object):
 
             residual_r_u.Vn = prev_V1 - cur_V1
             residual_r_u.ln = dPde.vector_b[i] + prev_l1 - cur_l1
-            dPde.residual_r_u.append(residual_r_u)
+            self.residual_r_u.append(residual_r_u)
 
-        return dPde, dPde.residual_r_u
+        return self.residual_r_u
+
+    def get_error_dreach_set(self, dPde):
+        'compute e[n] = A e[n - 1] + b[n]'
+
+        assert isinstance(dPde, DPdeAutomaton)
+        self.residual_r_u = []    # reset the residual
+        Verifier.compute_residul_r_u(self, dPde)
+
+        n = len(self.residual_r_u)
+        self.dis_err_set = []
+        error = DReachSet()
+        print "\nn={}".format(n)
+        for i in xrange(0, n):
+            ru = self.residual_r_u[i]
+            if i == 0:
+                error.Vn = dPde.inv_b_matrix * ru.Vn
+                error.ln = dPde.inv_b_matrix * ru.ln
+            else:
+                error.Vn = dPde.inv_b_matrix * ru.Vn + dPde.matrix_a * self.dis_err_set[i - 1].Vn
+                error.ln = dPde.inv_b_matrix * ru.ln + dPde.matrix_a * self.dis_err_set[i - 1].ln
+
+            error.alpha_range = dPde.alpha_range
+            error.beta_range = dPde.beta_range
+            self.dis_err_set.append(error)
+
+        return self.dis_err_set
