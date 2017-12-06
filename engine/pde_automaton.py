@@ -95,18 +95,18 @@ class DPdeAutomaton(object):
         self.alpha_range = alpha_range
         self.beta_range = beta_range
 
-    def set_unsafe_set(self, direction_matrix, unsafe_vector):
+    def set_unsafe_set(self, unsafe_matrix, unsafe_vector):
         'define the unsafe set of the automaton'
 
-        # unsafe Set defined by direction_matrix * U <= unsafe_vector
-        assert isinstance(direction_matrix, csc_matrix)
+        # unsafe Set defined by unsafe_matrix * U <= unsafe_vector
+        assert isinstance(unsafe_matrix, csc_matrix)
         assert isinstance(unsafe_vector, csc_matrix)
-        assert direction_matrix.shape[0] == unsafe_vector.shape[0], 'inconsistency, \
+        assert unsafe_matrix.shape[0] == unsafe_vector.shape[0], 'inconsistency, \
              direction_matrix.shape[0] = {} != unsafe_vector.shape[0] = {}'\
-             .format(direction_matrix.shape[0], unsafe_vector.shape[0])
+             .format(unsafe_matrix.shape[0], unsafe_vector.shape[0])
 
         self.unsafe_set = GeneralSet()
-        self.unsafe_set.set_constraints(direction_matrix, unsafe_vector)
+        self.unsafe_set.set_constraints(unsafe_matrix, unsafe_vector)
 
         return self.unsafe_set
 

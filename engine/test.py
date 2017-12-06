@@ -39,10 +39,13 @@ if __name__ == '__main__':
     reach_set_at_final_step = dis_reachable_set[toTimeStep]
     dis_min_vec, _, dis_max_vec, _ = reach_set_at_final_step.get_min_max()
 
+    unsafe_mat = lil_matrix((1, dPde.matrix_a.shape[0]), dtype=float)
+    unsafe_mat[0, dPde.matrix_a.shape[0] - 1] = 1
     unsafe_vector = lil_matrix((1, 1), dtype=float)
     unsafe_vector[0, 0] = -1
 
-    #verifier.on_fly_check_dPde(dPde, toTimeStep)
+    dPde.set_unsafe_set(unsafe_mat.tocsc(), unsafe_vector.tocsc())
+    verifier.on_fly_check_dPde(dPde, toTimeStep)
 
     ############################################################
     # test interpolation class
