@@ -3,7 +3,7 @@ This module implements continuous/ discreted pde automaton classes and its metho
 Dung Tran: Nov/2017
 '''
 
-from scipy.sparse import csc_matrix, lil_matrix
+from scipy.sparse import csc_matrix
 import numpy as np
 from engine.set import GeneralSet
 
@@ -64,7 +64,7 @@ class DPdeAutomaton(object):
             assert 0 <= xlist[i] < xlist[i + 1], 'invalid xlist'
 
         if self.matrix_a is not None:
-            assert len(xlist) == self.matrix_a.shape[0], 'inconsistent xlist'
+            assert len(xlist) - 2 == self.matrix_a.shape[0], 'inconsistent xlist'
 
         assert (time_step > 0), 'time step k = {} should be >= 0'.format(time_step)
         self.xlist = xlist

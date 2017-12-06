@@ -273,28 +273,35 @@ class Interpolation(object):
         assert isinstance(vector_Vn, np.ndarray)
         assert isinstance(vector_ln, np.ndarray)
         assert len(
-            xlist) == vector_Vn.shape[0] == vector_ln.shape[0], 'inconsistent data'
+            xlist) - 2 == vector_Vn.shape[0] == vector_ln.shape[0], 'inconsistent data'
         assert vector_Vn.shape[1] == vector_ln.shape[1] == 1, 'invalid vectors'
 
-        n = len(xlist)
+        n = len(xlist) - 1
         Vn = vector_Vn
         ln = vector_ln
-        a_n_vector = np.zeros((n - 1,), dtype=float)
-        b_n_vector = np.zeros((n - 1,), dtype=float)
-        c_n_vector = np.zeros((n - 1,), dtype=float)
-        d_n_vector = np.zeros((n - 1,), dtype=float)
+        a_n_vector = np.zeros((n,), dtype=float)
+        b_n_vector = np.zeros((n,), dtype=float)
+        c_n_vector = np.zeros((n,), dtype=float)
+        d_n_vector = np.zeros((n,), dtype=float)
 
-        for i in xrange(0, n - 1):
-            hi_plus_1 = xlist[i + 1] - xlist[i]
-            delta_Vn_i = Vn[i + 1, 0] - Vn[i, 0]
-            delta_ln_i = ln[i + 1, 0] - ln[i, 0]
+        for i in xrange(0, n):
+            hi = xlist[i + 1] - xlist[i]
+            if i == 0:
+                a_n_vector[i] = Vn[i, 0] / hi
+                b_n_vector[i] = ln[i, 0] / hi
+                c_n_vector[i] = 0.0
+                d_n_vector[i] = 0.0
+            elif 0 < i < n - 1:
+                a_n_vector[i] = (Vn[i, 0] - Vn[i - 1, 0]) / hi
+                b_n_vector[i] = (ln[i, 0] - ln[i - 1, 0]) / hi
+                c_n_vector[i] = (Vn[i - 1, 0] * xlist[i + 1] - Vn[i, 0] * xlist[i]) / hi
+                d_n_vector[i] = (ln[i - 1, 0] * xlist[i + 1] - ln[i, 0] * xlist[i]) / hi
 
-            a_n_vector[i] = delta_Vn_i / hi_plus_1
-            b_n_vector[i] = delta_ln_i / hi_plus_1
-            c_n_vector[i] = (Vn[i, 0] * xlist[i + 1] -
-                             Vn[i + 1, 0] * xlist[i]) / hi_plus_1
-            d_n_vector[i] = (ln[i, 0] * xlist[i + 1] -
-                             ln[i + 1, 0] * xlist[i]) / hi_plus_1
+            elif i == n - 1:
+                a_n_vector[i] = - Vn[i - 1, 0]
+                b_n_vector[i] = - ln[i - 1, 0]
+                c_n_vector[i] = 0.0
+                d_n_vector[i] = 0.0
 
         interpol_inspace_set = InterpolSetInSpace()
         interpol_inspace_set.set_values(
