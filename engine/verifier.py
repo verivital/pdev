@@ -16,6 +16,7 @@ class ReachSetAssembler(object):
     def __init__(self):
         self.u_dreachset = []
         self.err_dreachset = []
+        self.bloated_dreachset = []
 
     @staticmethod
     def get_cur_u_dreachset(matrix_a, prev_u, cur_b_vec):
