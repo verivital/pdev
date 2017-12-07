@@ -60,7 +60,7 @@ class Functions(object):
 
         # can be general function with x and t variables
         func = Function('func')
-        func = x * exp(-t)    # you can change f(x,t) function here
+        func = exp(-x) * exp(-t)    # you can change f(x,t) function here
         return func, lambdify((x, t), func)
 
     @staticmethod
@@ -93,7 +93,7 @@ class Functions(object):
 
         # can be general function with variable x
         func = Function('func')
-        func = x * sin(x)    # you can change u0(x) function here
+        func = sin(x / 10.0)    # you can change u0(x) function here
         return func, lambdify(x, func)
 
     @staticmethod
