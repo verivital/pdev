@@ -6,7 +6,7 @@ Dung Tran: Nov/2017
 from scipy.sparse import csc_matrix, lil_matrix, hstack
 from engine.pde_automaton import DPdeAutomaton
 from engine.set import DReachSet, GeneralSet, RectangleSet2D, RectangleSet3D
-from engine.interpolation import Interpolation
+from engine.interpolation import Interpolation, InterpolSetInSpace, InterpolationSet
 from engine.fem import Fem1D
 
 
@@ -102,7 +102,6 @@ class ReachSetAssembler(object):
 
         return cur_be
 
-
     @staticmethod
     def get_dreachset(dPde, toTimeStep):
         'compute approximate discrete reachable set of u and e and the bloated u + e'
@@ -137,7 +136,6 @@ class ReachSetAssembler(object):
                 cur_be = ReachSetAssembler.get_cur_be(u_dreachset_list[cur_time - 1], u_dreachset, dPde, cur_time)
                 err_dreachset = ReachSetAssembler.get_cur_err_dreachset(dPde.matrix_a, err_dreachset_list[cur_time - 1], cur_be)
 
-
             bloated_dreach_set.Vn = u_dreachset.Vn + err_dreachset.Vn
             bloated_dreach_set.ln = u_dreachset.ln + err_dreachset.ln
             bloated_dreach_set.alpha_range = dPde.alpha_range
@@ -148,6 +146,37 @@ class ReachSetAssembler(object):
             bloated_dreach_set_list.append(bloated_dreach_set)
 
         return u_dreachset_list, err_dreachset_list, bloated_dreach_set_list
+
+    @staticmethod
+    def get_interpolationset(dPde, toTimeStep):
+        'compute the interpolation set in both space and time'
+
+        assert isinstance(dPde, DPdeAutomaton)
+        assert isinstance(toTimeStep, int) and toTimeStep >= 0
+
+        u_dset, e_dset, bl_dset = ReachSetAssembler.get_dreachset(dPde, toTimeStep)
+        n = len(u_dset)
+        u_setinspace_list = []    # interpolation set of u set in space
+        e_setinspace_list = []    # interpolation set of error set in space
+        bl_setinspace_list = []    # interpolation set of bloated set in space
+        u_set_list = []    # interpolation set of u in both time and space
+        e_set_list = []    # interpolation set of error set in both time and space
+        bl_set_list = []    # interpolation set of bloated set in both time and space
+
+        # interpolation set in space
+        for i in xrange(0, n):
+            u_setinspace_list.append(Interpolation.interpolate_in_space(dPde.xlist, u_dset[i].Vn.todense(), u_dset[i].ln.todense()))
+            e_setinspace_list.append(Interpolation.interpolate_in_space(dPde.xlist, e_dset[i].Vn.todense(), e_dset[i].ln.todense()))
+            bl_setinspace_list.append(Interpolation.interpolate_in_space(dPde.xlist, bl_dset[i].Vn.todense(), bl_dset[i].ln.todense()))
+
+        # interpolation set in both space and time
+        for i in xrange(1, n):
+            u_set_list.append(Interpolation.increm_interpolation(dPde.time_step, i, u_setinspace_list[i - 1], u_setinspace_list[i]))
+            e_set_list.append(Interpolation.increm_interpolation(dPde.time_step, i, e_setinspace_list[i - 1], e_setinspace_list[i]))
+            bl_set_list.append(Interpolation.increm_interpolation(dPde.time_step, i, bl_setinspace_list[i - 1], bl_setinspace_list[i]))
+
+        return u_setinspace_list, e_setinspace_list, bl_setinspace_list, u_set_list, e_set_list, bl_set_list
+
 
 class Verifier(object):
     'verifier for discreted pde automaton'

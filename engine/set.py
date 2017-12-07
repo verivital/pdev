@@ -211,9 +211,9 @@ class DReachSet(object):
                 raise ValueError(
                     'maximization fail!')
 
-        print "\nmin_vec = \n{}".format(min_vec)
-        print "\nmin_points = \n{}".format(min_points)
-        print "\nmax_vec = \n{}".format(max_vec)
-        print "\nmax_points = \n{}".format(max_points)
+        # print "\nmin_vec = \n{}".format(min_vec)
+        # print "\nmin_points = \n{}".format(min_points)
+        # print "\nmax_vec = \n{}".format(max_vec)
+        # print "\nmax_points = \n{}".format(max_points)
 
         return min_vec, min_points, max_vec, max_points

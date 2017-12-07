@@ -3,7 +3,7 @@ This module implements some basic functions used for reachable set computation a
 Dung Tran: Nov/2017
 '''
 
-from sympy import Piecewise, And, Function, lambdify, integrate, exp
+from sympy import Piecewise, And, Function, lambdify, integrate, exp, sin
 from sympy.abc import x, t, alpha, beta
 from scipy.optimize import minimize
 
@@ -93,7 +93,7 @@ class Functions(object):
 
         # can be general function with variable x
         func = Function('func')
-        func = 2 * x + 1    # you can change u0(x) function here
+        func = x * sin(x)    # you can change u0(x) function here
         return func, lambdify(x, func)
 
     @staticmethod

@@ -55,10 +55,30 @@ if __name__ == '__main__':
     ############################################################
     # test ReachSetAssembler
     RSA = ReachSetAssembler()
-    u_set, e_set, bloated_set = RSA.get_dreachset(dPde, toTimeStep)
+    u_dset, e_dset, bloated_dset = RSA.get_dreachset(dPde, toTimeStep)
+    print "\nu_dset = {}".format(u_dset)
+    print "\ne_dset = {}".format(e_dset)
+    print "\nbloated_dset = {}".format(bloated_dset)
+    u_min, u_min_points, u_max, u_max_points = u_dset[toTimeStep].get_min_max()
+    e_min, e_min_points, e_max, e_max_points = e_dset[toTimeStep].get_min_max()
+    bloated_min, bloated_min_points, bloated_max, bloated_max_points = bloated_dset[toTimeStep].get_min_max()
+    print "\nu_min = \n{}, u min_points = \n{}".format(u_min, u_min_points)
+    print "\nu_max = \n{}, u max_points = \n{}".format(u_max, u_max_points)
+
+    print "\ne_min = \n{}, e min_points = \n{}".format(e_min, e_min_points)
+    print "\ne_max = \n{}, e max_points = \n{}".format(e_max, e_max_points)
+
+    print "\nbloated_min = \n{}, bloated min_points = \n{}".format(bloated_min, bloated_min_points)
+    print "\nbloated_max = \n{}, bloated max_points = \n{}".format(bloated_max, bloated_max_points)
+
+    u_inspace, e_inspace, bl_inspace, u_set, e_set, bl_set = RSA.get_interpolationset(dPde, toTimeStep)
+
+    print "\nu_inspace = {}".format(u_inspace)
     print "\nu_set = {}".format(u_set)
+    print "\ne_inspace = {}".format(e_inspace)
     print "\ne_set = {}".format(e_set)
-    print "\nbloated_set = {}".format(bloated_set)
+    print "\nbl_inspace = {}".format(bl_inspace)
+    print "\nbl_set = {}".format(bl_set)
 
     ############################################################
     # test interpolation class
