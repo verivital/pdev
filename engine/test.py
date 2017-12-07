@@ -6,7 +6,7 @@ Dung Tran: Nov/2017
 import matplotlib.pyplot as plt
 from scipy.sparse import lil_matrix
 from engine.fem import Fem1D
-from engine.verifier import Verifier
+from engine.verifier import Verifier, ReachSetAssembler
 from engine.plot import Plot
 
 
@@ -46,11 +46,19 @@ if __name__ == '__main__':
     dPde.set_unsafe_set(unsafe_mat.tocsc(), unsafe_vector.tocsc())
     verifier.on_fly_check_dPde(dPde, toTimeStep)
 
-    residual = verifier.compute_residul_r_u(dPde)
-    print"\nresidual r(u) = \n{}".format(residual)
-    dis_err_set = verifier.get_error_dreach_set(dPde)
-    print"\nerror discrete reach set = \n{}".format(dis_err_set)
-    min_err_vec, _, max_err_vec, _ = dis_err_set[toTimeStep - 1].get_min_max()
+    #residual = verifier.compute_residul_r_u(dPde)
+    #print"\nresidual r(u) = \n{}".format(residual)
+    #dis_err_set = verifier.get_error_dreach_set(dPde)
+    #print"\nerror discrete reach set = \n{}".format(dis_err_set)
+    #min_err_vec, _, max_err_vec, _ = dis_err_set[toTimeStep - 1].get_min_max()
+
+    ############################################################
+    # test ReachSetAssembler
+    RSA = ReachSetAssembler()
+    u_set, e_set, bloated_set = RSA.get_dreachset(dPde, toTimeStep)
+    print "\nu_set = {}".format(u_set)
+    print "\ne_set = {}".format(e_set)
+    print "\nbloated_set = {}".format(bloated_set)
 
     ############################################################
     # test interpolation class
