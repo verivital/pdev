@@ -113,10 +113,7 @@ class InterpolSetInSpace(object):
             else:
                 raise ValueError('max-optimization fail')
 
-            box_2D.xmin = self.xlist[i]
-            box_2D.xmax = self.xlist[i + 1]
-            box_2D.ymin = min_vec[i]
-            box_2D.ymax = max_vec[i]
+            box_2D.set_bounds(self.xlist[i], self.xlist[i + 1], min_vec[i], max_vec[i])
             boxes_2D_list.append(box_2D)
 
         return boxes_2D_list, min_vec, min_points, max_vec, max_points
@@ -256,12 +253,10 @@ class InterpolationSet(object):
                 raise ValueError(
                     'maximization for interpolation function fail!')
 
-            box_3D.xmin = self.xlist[j]
-            box_3D.xmax = self.xlist[j + 1]
-            box_3D.ymin = (self.cur_time_step - 1) * self.step
-            box_3D.ymax = (self.cur_time_step) * self.step
-            box_3D.zmin = min_vec[j]
-            box_3D.zmax = max_vec[j]
+            ymin = (self.cur_time_step - 1) * self.step
+            ymax = (self.cur_time_step) * self.step
+
+            box_3D.set_bounds(self.xlist[j], self.xlist[j + 1], ymin, ymax, min_vec[j], max_vec[j])
             boxes_3D_list.append(box_3D)
 
         return boxes_3D_list, min_vec, min_points, max_vec, max_points

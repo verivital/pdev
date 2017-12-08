@@ -42,17 +42,24 @@ if __name__ == '__main__':
     ############################################################
     # Plot interpolation reachable set
 
+    print "\nlen u_inspace = {}".format(u_inspace)
     # plot interpolation in space set
     u_sp = u_inspace[toTimeStep]
     e_sp = e_inspace[toTimeStep]
     bl_sp = bl_inspace[toTimeStep]
 
-    u_sp_boxes, _, _, _, _ = u_sp.get_2D_boxes(alpha_range, beta_range)
+    u_sp_boxes, u_sp_min, _, u_sp_max, _ = u_sp.get_2D_boxes(alpha_range, beta_range)
     e_sp_boxes, _, _, _, _ = e_sp.get_2D_boxes(alpha_range, beta_range)
     bl_sp_boxes, _, _, _, _ = bl_sp.get_2D_boxes(alpha_range, beta_range)
+
+    #print "\nu_sp_min = {}".format(u_sp_min)
+    #print "\nu_sp_max = {}".format(u_sp_max)
+    #print "\nu_sp_boxes = {}".format(u_sp_boxes)
 
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111)
     pl1 = Plot()
     ax1 = pl1.plot_boxes(ax1, u_sp_boxes, facecolor='b', edgecolor='b')
+    ax1.set_xlim(0, 10.5)
+    ax1.set_ylim(-4.0, 2.0)
     plt.show()
