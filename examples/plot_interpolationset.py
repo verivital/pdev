@@ -18,7 +18,7 @@ if __name__ == '__main__':
     mesh_points = np.arange(0.0, 10 + 0.5, 0.5)    # generate mesh points
     print "\nmesh_points = {}".format(mesh_points)
     step = 0.1    # time step of FEM
-    toTimeStep = 10    # number of time steps
+    toTimeStep = 2    # number of time steps
     time_list = np.arange(0, toTimeStep * step + step, step)
     xlist = mesh_points[1: mesh_points.shape[0] - 1]
     x_dom = [2.0, 4.0]    # domain of input function
@@ -43,3 +43,16 @@ if __name__ == '__main__':
     # Plot interpolation reachable set
 
     # plot interpolation in space set
+    u_sp = u_inspace[toTimeStep]
+    e_sp = e_inspace[toTimeStep]
+    bl_sp = bl_inspace[toTimeStep]
+
+    u_sp_boxes, _, _, _, _ = u_sp.get_2D_boxes(alpha_range, beta_range)
+    e_sp_boxes, _, _, _, _ = e_sp.get_2D_boxes(alpha_range, beta_range)
+    bl_sp_boxes, _, _, _, _ = bl_sp.get_2D_boxes(alpha_range, beta_range)
+
+    fig1 = plt.figure()
+    ax1 = fig1.add_subplot(111)
+    pl1 = Plot()
+    ax1 = pl1.plot_boxes(ax1, u_sp_boxes, facecolor='b', edgecolor='b')
+    plt.show()

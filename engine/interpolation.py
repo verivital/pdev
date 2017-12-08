@@ -6,6 +6,7 @@ Dung Tran: Nov/2017
 import numpy as np
 from engine.functions import Functions
 from scipy.optimize import minimize
+from engine.set import RectangleSet2D, RectangleSet3D
 
 
 class InterpolSetInSpace(object):
@@ -48,8 +49,8 @@ class InterpolSetInSpace(object):
         self.d_vec = d_current_step_vec
         self.xlist = xlist
 
-    def get_min_max(self, alpha_range, beta_range):
-        'find minimum value of U_n(x)'
+    def get_2D_boxes(self, alpha_range, beta_range):
+        'get box contain all value of U_n(x) and min-max value of U_n(x)'
 
         assert self.a_vec is not None and self.b_vec is not None and self.c_vec is not None and self.d_vec is not None
         assert isinstance(alpha_range, tuple)
@@ -73,6 +74,10 @@ class InterpolSetInSpace(object):
         max_vec = np.zeros((n,), dtype=float)
         # maximum points [x_max, alpha_max, beta_max]
         max_points = np.zeros((n, 3), dtype=float)
+
+        boxes_2D_list = []
+
+        box_2D = RectangleSet2D()
 
         for i in xrange(0, n):
             min_func = Functions.intpl_inspace_func(
@@ -108,7 +113,13 @@ class InterpolSetInSpace(object):
             else:
                 raise ValueError('max-optimization fail')
 
-        return min_vec, min_points, max_vec, max_points
+            box_2D.xmin = self.xlist[i]
+            box_2D.xmax = self.xlist[i + 1]
+            box_2D.ymin = min_vec[i]
+            box_2D.ymax = max_vec[i]
+            boxes_2D_list.append(box_2D)
+
+        return boxes_2D_list, min_vec, min_points, max_vec, max_points
 
 
 class InterpolationSet(object):
@@ -170,8 +181,8 @@ class InterpolationSet(object):
         self.delta_gamma_c_vec = delta_gamma_c_vec
         self.delta_gamma_d_vec = delta_gamma_d_vec
 
-    def get_min_max(self, alpha_range, beta_range):
-        'find minimum and maximum values of interpolation set U(x, t)'
+    def get_3D_boxes(self, alpha_range, beta_range):
+        'find minimum and maximum values of interpolation set U(x, t) and 3D boxes contain all U(x,t)'
 
         assert self.delta_a_vec is not None, 'empty interpolation set'
         assert isinstance(alpha_range, tuple) and len(
@@ -184,6 +195,8 @@ class InterpolationSet(object):
         max_vec = np.zeros((m,), dtype=float)
         min_points = []
         max_points = []
+        boxes_3D_list = []
+        box_3D = RectangleSet3D()
 
         for j in xrange(0, m):
             min_func = Functions.intpl_in_time_and_space_func(
@@ -243,7 +256,15 @@ class InterpolationSet(object):
                 raise ValueError(
                     'maximization for interpolation function fail!')
 
-        return min_vec, min_points, max_vec, max_points
+            box_3D.xmin = self.xlist[j]
+            box_3D.xmax = self.xlist[j + 1]
+            box_3D.ymin = (self.cur_time_step - 1) * self.step
+            box_3D.ymax = (self.cur_time_step) * self.step
+            box_3D.zmin = min_vec[j]
+            box_3D.zmax = max_vec[j]
+            boxes_3D_list.append(box_3D)
+
+        return boxes_3D_list, min_vec, min_points, max_vec, max_points
 
 
 class Interpolation(object):
@@ -316,7 +337,8 @@ class Interpolation(object):
         return interpol_inspace_set
 
     @staticmethod
-    def increm_interpolation(step, cur_time_step, prev_intpl_inspace_set, cur_intpl_inspace_set):
+    def increm_interpolation(
+            step, cur_time_step, prev_intpl_inspace_set, cur_intpl_inspace_set):
         'incrementally doing interpolation'
 
         assert isinstance(prev_intpl_inspace_set, InterpolSetInSpace)
