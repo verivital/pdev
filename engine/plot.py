@@ -5,7 +5,7 @@ Dung Tran: Nov/2017
 
 from matplotlib.patches import Rectangle
 from matplotlib.axes import Axes
-from engine.set import RectangleSet2D, RectangleSet3D
+from engine.set import RectangleSet2D, RectangleSet3D, LineSet
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from mpl_toolkits.mplot3d.axes3d import Axes3D
 import numpy as np
@@ -61,23 +61,21 @@ class Plot(object):
         return ax
 
     @staticmethod
-    def plot_vlines(ax, x_pos_list, ymin_list, ymax_list, colors, linestyles):
-        'plot vline at x, where ymin <= y <= ymax'
+    def plot_vlines(ax, x_pos_list, lines_list, colors, linestyles):
+        'plot vline at x'
 
         assert isinstance(ax, Axes)
         assert isinstance(x_pos_list, list)
-        assert isinstance(ymin_list, list)
-        assert isinstance(ymax_list, list)
-
-        assert len(x_pos_list) == len(ymin_list) == len(
-            ymax_list), 'inconsistent data'
+        assert isinstance(lines_list, list)
+        assert len(x_pos_list) == len(lines_list), 'inconsistent data, len_x = {} != len(line) = {}'.format(len(x_pos_list), len(lines_list))
         n = len(x_pos_list)
-
+        ymin_list = []
+        ymax_list = []
         for i in xrange(0, n):
-            if ymin_list[i] > ymax_list[i]:
-                raise ValueError(
-                    'invalid values, ymin[{}] = {} > ymax[{} = {}]'.format(
-                        i, ymin_list[i], i, ymax_list[i]))
+            assert isinstance(lines_list[i], LineSet)
+            ymin_list.append(lines_list[i].xmin)
+            ymax_list.append(lines_list[i].xmax)
+
         ax.vlines(
             x_pos_list,
             ymin_list,

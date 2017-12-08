@@ -110,23 +110,19 @@ class ReachSetAssembler(object):
         assert isinstance(toTimeStep, int) and toTimeStep >= 0
 
         u_dreachset_list = []
-        u_dreachset = DReachSet()
         err_dreachset_list = []
-        err_dreachset = DReachSet()
-        bloated_dreach_set_list = []
-        bloated_dreach_set = DReachSet()
+        bloated_dreachset_list = []
 
         for cur_time in xrange(0, toTimeStep + 1):
+            err_dreachset = DReachSet()
+            u_dreachset = DReachSet()
             if cur_time == 0:
-                u_dreachset.Vn = dPde.init_vector
-                u_dreachset.ln = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
-                u_dreachset.alpha_range = dPde.alpha_range
-                u_dreachset.beta_range = dPde.beta_range
-
-                err_dreachset.Vn = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
-                err_dreachset.ln = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
-                err_dreachset.alpha_range = dPde.alpha_range
-                err_dreachset.beta_range = dPde.beta_range
+                u_Vn = dPde.init_vector
+                u_ln = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
+                err_Vn = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
+                err_ln = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
+                u_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, u_Vn, u_ln)
+                err_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, err_Vn, err_ln)
 
             else:
                 cur_b_vec = Fem1D.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time)
@@ -136,16 +132,14 @@ class ReachSetAssembler(object):
                 cur_be = ReachSetAssembler.get_cur_be(u_dreachset_list[cur_time - 1], u_dreachset, dPde, cur_time)
                 err_dreachset = ReachSetAssembler.get_cur_err_dreachset(dPde.matrix_a, err_dreachset_list[cur_time - 1], cur_be)
 
-            bloated_dreach_set.Vn = u_dreachset.Vn + err_dreachset.Vn
-            bloated_dreach_set.ln = u_dreachset.ln + err_dreachset.ln
-            bloated_dreach_set.alpha_range = dPde.alpha_range
-            bloated_dreach_set.beta_range = dPde.beta_range
-
             u_dreachset_list.append(u_dreachset)
             err_dreachset_list.append(err_dreachset)
-            bloated_dreach_set_list.append(bloated_dreach_set)
 
-        return u_dreachset_list, err_dreachset_list, bloated_dreach_set_list
+            bloated_dreachset = DReachSet()
+            bloated_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, u_dreachset.Vn + err_dreachset.Vn, u_dreachset.ln + err_dreachset.ln)
+            bloated_dreachset_list.append(bloated_dreachset)
+
+        return u_dreachset_list, err_dreachset_list, bloated_dreachset_list
 
     @staticmethod
     def get_interpolationset(dPde, toTimeStep):

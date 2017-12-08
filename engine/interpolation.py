@@ -77,8 +77,6 @@ class InterpolSetInSpace(object):
 
         boxes_2D_list = []
 
-        box_2D = RectangleSet2D()
-
         for i in xrange(0, n):
             min_func = Functions.intpl_inspace_func(
                 a_vec[i], b_vec[i], c_vec[i], d_vec[i])
@@ -113,6 +111,7 @@ class InterpolSetInSpace(object):
             else:
                 raise ValueError('max-optimization fail')
 
+            box_2D = RectangleSet2D()
             box_2D.set_bounds(self.xlist[i], self.xlist[i + 1], min_vec[i], max_vec[i])
             boxes_2D_list.append(box_2D)
 
@@ -193,7 +192,6 @@ class InterpolationSet(object):
         min_points = []
         max_points = []
         boxes_3D_list = []
-        box_3D = RectangleSet3D()
 
         for j in xrange(0, m):
             min_func = Functions.intpl_in_time_and_space_func(
@@ -256,6 +254,7 @@ class InterpolationSet(object):
             ymin = (self.cur_time_step - 1) * self.step
             ymax = (self.cur_time_step) * self.step
 
+            box_3D = RectangleSet3D()
             box_3D.set_bounds(self.xlist[j], self.xlist[j + 1], ymin, ymax, min_vec[j], max_vec[j])
             boxes_3D_list.append(box_3D)
 
@@ -316,10 +315,10 @@ class Interpolation(object):
                                  ln[i, 0] * xlist[i]) / hi
 
             elif i == n - 1:
-                a_n_vector[i] = - Vn[i - 1, 0]
-                b_n_vector[i] = - ln[i - 1, 0]
-                c_n_vector[i] = 0.0
-                d_n_vector[i] = 0.0
+                a_n_vector[i] = - Vn[i - 1, 0] / hi
+                b_n_vector[i] = - ln[i - 1, 0] / hi
+                c_n_vector[i] = i * Vn[i - 1, 0]
+                d_n_vector[i] = i * ln[i - 1, 0]
 
         interpol_inspace_set = InterpolSetInSpace()
         interpol_inspace_set.set_values(

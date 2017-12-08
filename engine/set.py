@@ -3,7 +3,7 @@ This module implements general set class and DReachSet class and their methods
 Dung Tran: Nov/2017
 '''
 
-from scipy.sparse import lil_matrix, csc_matrix, vstack
+from scipy.sparse import csc_matrix, vstack
 from scipy.optimize import linprog, minimize
 from engine.functions import Functions
 import numpy as np
@@ -68,7 +68,7 @@ class LineSet(object):
         assert isinstance(xmin, float)
         assert isinstance(xmax, float)
 
-        assert xmin < xmax, 'invalid set, xmin = {} is not < than xmax = {}'.format(xmin, xmax)
+        assert xmin <= xmax, 'invalid set, xmin = {} is not <= than xmax = {}'.format(xmin, xmax)
         self.xmin = xmin
         self.xmax = xmax
 
@@ -163,7 +163,7 @@ class DReachSet(object):
         self.Vn = vector_Vn
         self.ln = vector_ln
 
-    def get_min_max(self):
+    def get_lines_set(self):
         'compute range of discrete reach set, i.e.,  x_min[i] <= x[i] <= x_max[i]'
 
         assert self.alpha_range is not None and self.beta_range is not None, 'set perturbation parameters'
@@ -174,6 +174,8 @@ class DReachSet(object):
         max_vec = np.zeros((n,), dtype=float)
         min_points = []
         max_points = []
+        line_set_list = []
+
         for i in xrange(0, n):
             min_func = Functions.U_n_i_func(self.Vn[i, 0], self.ln[i, 0])
             max_func = Functions.U_n_i_func(-self.Vn[i, 0], -self.ln[i, 0])
@@ -211,9 +213,8 @@ class DReachSet(object):
                 raise ValueError(
                     'maximization fail!')
 
-        # print "\nmin_vec = \n{}".format(min_vec)
-        # print "\nmin_points = \n{}".format(min_points)
-        # print "\nmax_vec = \n{}".format(max_vec)
-        # print "\nmax_points = \n{}".format(max_points)
+            line = LineSet()
+            line.set_bounds(min_vec[i], max_vec[i])
+            line_set_list.append(line)
 
-        return min_vec, min_points, max_vec, max_points
+        return line_set_list, min_vec, min_points, max_vec, max_points
