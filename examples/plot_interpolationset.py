@@ -21,7 +21,7 @@ if __name__ == '__main__':
     mesh_points = np.multiply(mesh_grid, L / num_mesh_points)
     print "\nmesh_points = {}".format(mesh_points)
     step = 0.1    # time step of FEM
-    toTimeStep = 2    # number of time steps
+    toTimeStep = 5    # number of time steps
     time_grid = np.arange(0, toTimeStep + 1, step=1)
     time_list = np.multiply(time_grid, step)
     print "\ntime_list = {}".format(time_list)
@@ -47,23 +47,47 @@ if __name__ == '__main__':
     ############################################################
     # Plot interpolation reachable set
 
-    print "\nlen u_inspace = {}".format(len(u_inspace))
     # plot interpolation in space set
-    u_sp = u_inspace[toTimeStep]
-    e_sp = e_inspace[toTimeStep]
-    bl_sp = bl_inspace[toTimeStep]
-
-    u_sp_boxes, _, _, _, _ = u_sp.get_2D_boxes(alpha_range, beta_range)
-    e_sp_boxes, _, _, _, _ = e_sp.get_2D_boxes(alpha_range, beta_range)
-    bl_sp_boxes, _, _, _, _ = bl_sp.get_2D_boxes(alpha_range, beta_range)
-
-    print"\nlen u_sp_boxes = {}".format(len(u_sp_boxes))
-    print"\ntype of u_sp_boxes = {}".format(type(u_sp_boxes[0]))
+    bl_sp_boxes, _, _, _, _ = bl_inspace[toTimeStep].get_2D_boxes(alpha_range, beta_range)
+    print "\n len of bl_sp_boxes = {}".format(len(bl_sp_boxes))
+    bl_boxes_3d = []
+    for i in xrange(0, len(bl_set)):
+        box3d, _, _, _, _ = bl_set[i].get_3D_boxes(alpha_range, beta_range)
+        bl_boxes_3d.append(box3d)
 
     fig1 = plt.figure()
     ax1 = fig1.add_subplot(111)
     pl1 = Plot()
-    ax1 = pl1.plot_boxes(ax1, u_sp_boxes, facecolor='b', edgecolor='b')
+    ax1 = pl1.plot_boxes(ax1, bl_sp_boxes, facecolor='c', edgecolor='c')
+    ax1.legend([r'$\bar{u}(x,t=10s)$'])
+    ax1.set_ylim(-1.0, 1.0)
     ax1.set_xlim(0, 10.5)
-    ax1.set_ylim(-4.0, 2.0)
-    #plt.show()
+    plt.xticks(fontsize=20)
+    plt.yticks(fontsize=20)
+    plt.xlabel('$x$', fontsize=20)
+    plt.ylabel(r'$\bar{u}(x,t=10s)$', fontsize=20)
+    fig1.suptitle('Continuous Bloated Reachable Sets', fontsize=25)
+    fig1.savefig('con_bloated_reachset.pdf')
+    plt.show()
+
+    # plot interpolation set in both space and time
+    fig2 = plt.figure()
+    ax2 = fig2.add_subplot(111, projection='3d')
+    pl2 = Plot()
+    ax2 = pl2.plot_interpolationset(ax2, bl_boxes_3d, facecolor='c', linewidth=1, edgecolor='r')
+    ax2.set_xlim(0, 10.5)
+    ax2.set_ylim(0, 10.5)
+    ax2.set_zlim(0, 4.0)
+    ax2.tick_params(axis='z', labelsize=20)
+    ax2.tick_params(axis='x', labelsize=20)
+    ax2.tick_params(axis='y', labelsize=20)
+
+    #ax2.set_xticks(fontsize=20)
+    #ax2.set_yticks(fontsize=20)
+    #ax2.set_zticks(fontsize=20)
+    ax2.set_xlabel('$x$', fontsize=20)
+    ax2.set_ylabel('$t$', fontsize=20)
+    ax2.set_zlabel(r'$\bar{u}(x,t)$', fontsize=20)
+    fig2.suptitle('Continuous Bloated Reachable Sets in 3D', fontsize=25)
+    fig2.savefig('con_bloated_reachset_3D.pdf')
+    plt.show()

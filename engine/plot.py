@@ -103,7 +103,6 @@ class Plot(object):
 
         assert isinstance(boxes_list, list)
         assert isinstance(ax, Axes3D)
-
         for box in boxes_list:
             assert isinstance(box, RectangleSet3D)
             xmin = box.xmin
@@ -121,7 +120,7 @@ class Plot(object):
             p7 = [xmax, ymax, zmin]
             p8 = [xmax, ymax, zmax]
             V = np.array([p1, p2, p3, p4, p5, p6, p7, p8])
-            ax.scatter3D(V[:, 0], V[:, 1], V[:, 2])
+            #ax.scatter3D(V[:, 0], V[:, 1], V[:, 2])
             verts = [
                 [
                     V[0], V[1], V[6], V[4]], [
@@ -170,5 +169,17 @@ class Plot(object):
         ax.set_xlim(min_x - 0.1 * abs(min_x), max_x + 0.1 * abs(max_x))
         ax.set_ylim(min_y - 0.1 * abs(min_y), max_y + 0.1 * abs(max_y))
         ax.set_ylim(min_z - 0.1 * abs(min_z), max_z + 0.1 * abs(max_z))
+
+        return ax
+
+    @staticmethod
+    def plot_interpolationset(ax, interpolationset_list, facecolor, linewidth, edgecolor):
+        'plot interpolation set'
+
+        assert isinstance(interpolationset_list, list)
+        assert isinstance(ax, Axes3D)
+
+        for boxes_list in interpolationset_list:
+            ax = Plot.plot_3d_boxes(ax, boxes_list, facecolor, linewidth, edgecolor)
 
         return ax

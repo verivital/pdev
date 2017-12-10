@@ -254,6 +254,15 @@ class InterpolationSet(object):
             ymin = (self.cur_time_step - 1) * self.step
             ymax = (self.cur_time_step) * self.step
 
+            #print "\n at space step = {}, at time step = {}".format(j, self.cur_time_step)
+            #print "\ndelta_a_vec[{}] = {}, delta_b_vec[{}] = {}".format(j, self.delta_a_vec[j], j, self.delta_b_vec[j])
+            #print "\ndelta_gamma_a_vec[{}] = {}, delta_gamma_b_vec[{}] = {}".format(j, self.delta_gamma_a_vec[j], j, self.delta_gamma_b_vec[j])
+            #print "\ndelta_gamma_c_vec[{}] = {}, delta_gamma_d_vec[{}] = {}".format(j, self.delta_gamma_c_vec[j], j, self.delta_gamma_d_vec[j])
+            #print"\ntmin = {}, tmax = {}".format(ymin, ymax)
+            #print"\nxmin = {}, xmax = {}".format(self.xlist[j], self.xlist[j + 1])
+            #print"\nzmin = {}, zmax = {}".format(min_vec[j], max_vec[j])
+            #if min_vec[j] < 0 or max_vec[j] < 0:
+            #    print "\nNOTICE HERE!!!!!!!!!!!!!!!!!!!!!"
             box_3D = RectangleSet3D()
             box_3D.set_bounds(self.xlist[j], self.xlist[j + 1], ymin, ymax, min_vec[j], max_vec[j])
             boxes_3D_list.append(box_3D)
@@ -343,8 +352,8 @@ class Interpolation(object):
             cur_time_step, int) and cur_time_step >= 1, 'invalid current_time_step'
         assert isinstance(step, float) and step > 0, 'invalid time step'
         xlist = cur_intpl_inspace_set.xlist
-        delta_a_vec = cur_intpl_inspace_set.a_vec - prev_intpl_inspace_set.a_vec
-        delta_b_vec = cur_intpl_inspace_set.b_vec - prev_intpl_inspace_set.b_vec
+        delta_a_vec = prev_intpl_inspace_set.a_vec - cur_intpl_inspace_set.a_vec
+        delta_b_vec = prev_intpl_inspace_set.b_vec - cur_intpl_inspace_set.b_vec
         delta_gamma_a_vec = np.multiply(cur_intpl_inspace_set.a_vec, cur_time_step) - np.multiply(
             prev_intpl_inspace_set.a_vec, cur_time_step - 1)
         delta_gamma_b_vec = np.multiply(
