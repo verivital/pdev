@@ -12,6 +12,7 @@ from engine.fem import Fem1D
 from engine.functions import Functions
 from engine.specification import SafetySpecification
 import math
+import numpy as np
 
 
 class ReachSetAssembler(object):
@@ -182,9 +183,11 @@ class Verifier(object):
     def __init__(self):
 
         self.status = None
-        self.violate_time_point = None
-        self.unsafe_point = None    # a point x in the rod reach unsafe region
-        self.unsafe_trace = []    # a trace of point x along with time t
+        self.unsafe_time_point = None
+        self.unsafe_x_point = None    # a point x in the rod reach unsafe region
+        self.unsafe_u_point = None    # value of u(x,t) at unsafe point
+        self.unsafe_funcs_trace = []    # a list of functions of point x along with time t
+        self.unsafe_numerical_trace = None    # a numerical trace
 
     def check_safety(self, dPde, safety_specification):
         'verify safety of Pde automaton'
@@ -325,39 +328,65 @@ class Verifier(object):
                 if u1 is not None and u2 is not None:
                     if min_value < u1:
                         self.status = 'Unsafe'
+                        self.unsafe_u_point = min_value
                         feas_sol = min_points
                         break
                     elif max_value > u2:
                         self.status = 'Unsafe'
+                        self.unsafe_u_point = max_value
                         feas_sol = max_points
                         break
                 elif u1 is None and u2 is not None:
                     if max_value > u2:
                         self.status = 'Unsafe'
+                        self.unsafe_u_point = max_value
                         feas_sol = max_points
                         break
                 elif u1 is not None and u2 is None:
                     if min_value < u1:
                         self.status = 'Unsafe'
+                        self.unsafe_u_point = min_value
                         feas_sol = min_points
                         break
 
             if self.status == 'Unsafe':
                 fs = feas_sol[0]
-                self.violate_time_point = fs[0]
-                self.unsafe_point = fs[1]
+                self.unsafe_time_point = fs[0]
+                self.unsafe_x_point = fs[1]
                 alpha_value = fs[2]
                 beta_value = fs[3]
                 print "\nfeas_solution = {}".format(feas_sol)
                 break
 
         # return safe or unsafe and unsafe trace which is a list of function of t
-        self.unsafe_trace = []
+        self.unsafe_funcs_trace = []
         if self.status == 'Unsafe':
-            for j in xrange(0, int(math.floor(self.violate_time_point / step)) + 1):
+            for j in xrange(0, int(math.floor(self.unsafe_time_point / step)) + 1):
                 bl_set = bloated_set[j]
-                self.unsafe_trace.append(bl_set.get_trace_func(alpha_value, beta_value, self.unsafe_point))
+                self.unsafe_funcs_trace.append(bl_set.get_trace_func(alpha_value, beta_value, self.unsafe_x_point))
+                self.unsafe_numerical_trace = self.produce_numerical_trace(step, self.unsafe_funcs_trace, self.unsafe_time_point, 10)
         else:
             self.status = 'Safe'
 
-        return self.status, self.unsafe_trace, self.unsafe_point, self.violate_time_point
+        return self
+
+    @staticmethod
+    def produce_numerical_trace(step, unsafe_trace_funcs, violate_time_point, num_time_points):
+        'produce a numerical trace from trace_funcs list'
+
+        assert isinstance(num_time_points, int) and num_time_points > 0
+        assert isinstance(step, float) and step > 0
+        assert isinstance(unsafe_trace_funcs, list) and unsafe_trace_funcs != []
+        assert isinstance(violate_time_point, float) and violate_time_point >= 0
+
+        time_grid = np.arange(0, num_time_points + 1, step=1)
+        time_list = np.multiply(time_grid, violate_time_point / num_time_points)
+        print "\ntime_list = {}".format(time_list)
+
+        u_list = []
+        for i in xrange(0, num_time_points + 1):
+            j = int(math.floor(time_list[i] / step))
+            func = unsafe_trace_funcs[j]
+            u_list.append(func([time_list[i]]))
+
+        return (time_list.tolist(), u_list)

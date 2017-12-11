@@ -169,7 +169,7 @@ class Fem1D(object):
         dPde.set_init_condition(init_vector)
         dPde.set_xlist_time_step(x, time_step)
 
-        return mass_mat, stiff_mat, load_vec, init_vector, dPde
+        return dPde
 
 if __name__ == '__main__':
     xlist = [0.0, 0.5, 1.0, 1.5, 2.0]
