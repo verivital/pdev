@@ -60,7 +60,7 @@ if __name__ == '__main__':
     pl1 = Plot()
     ax1 = pl1.plot_boxes(ax1, bl_sp_boxes, facecolor='c', edgecolor='c')
     ax1.legend([r'$\bar{u}(x,t=10s)$'])
-    ax1.set_ylim(-1.0, 1.0)
+    ax1.set_ylim(0.0, 1.0)
     ax1.set_xlim(0, 10.5)
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)

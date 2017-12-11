@@ -137,12 +137,14 @@ class InterpolationSet(object):
         self.delta_gamma_a_vec = None
         self.delta_b_vec = None
         self.delta_gamma_b_vec = None
+        self.delta_c_vec = None
+        self.delta_d_vec = None
         self.delta_gamma_c_vec = None
         self.delta_gamma_d_vec = None
 
     def set_values(self, step, cur_time_step, xlist, delta_a_vec, delta_b_vec,
                    delta_gamma_a_vec, delta_gamma_b_vec,
-                   delta_gamma_c_vec, delta_gamma_d_vec):
+                   delta_c_vec, delta_d_vec, delta_gamma_c_vec, delta_gamma_d_vec):
         'set values for the set'
 
         assert isinstance(step, float)
@@ -151,6 +153,8 @@ class InterpolationSet(object):
         assert step > 0, 'invalid time step'
         assert isinstance(delta_a_vec, np.ndarray)
         assert isinstance(delta_b_vec, np.ndarray)
+        assert isinstance(delta_c_vec, np.ndarray)
+        assert isinstance(delta_c_vec, np.ndarray)
         assert isinstance(delta_gamma_a_vec, np.ndarray)
         assert isinstance(delta_gamma_b_vec, np.ndarray)
         assert isinstance(delta_gamma_c_vec, np.ndarray)
@@ -158,7 +162,7 @@ class InterpolationSet(object):
 
         assert delta_a_vec.shape == delta_b_vec.shape == \
             delta_gamma_a_vec.shape == delta_gamma_b_vec.shape == delta_gamma_c_vec.shape == \
-            delta_gamma_d_vec.shape, 'invalid data set'
+            delta_gamma_d_vec.shape == delta_c_vec.shape == delta_d_vec.shape, 'invalid data set'
 
         assert isinstance(xlist, list)
         for i in xrange(0, len(xlist) - 1):
@@ -174,6 +178,8 @@ class InterpolationSet(object):
         self.delta_b_vec = delta_b_vec
         self.delta_gamma_a_vec = delta_gamma_a_vec
         self.delta_gamma_b_vec = delta_gamma_b_vec
+        self.delta_c_vec = delta_c_vec
+        self.delta_d_vec = delta_d_vec
         self.delta_gamma_c_vec = delta_gamma_c_vec
         self.delta_gamma_d_vec = delta_gamma_d_vec
 
@@ -200,6 +206,8 @@ class InterpolationSet(object):
                 self.delta_b_vec[j],
                 self.delta_gamma_a_vec[j],
                 self.delta_gamma_b_vec[j],
+                self.delta_c_vec[j],
+                self.delta_d_vec[j],
                 self.delta_gamma_c_vec[j],
                 self.delta_gamma_d_vec[j])
             max_func = Functions.intpl_in_time_and_space_func(self.step, -
@@ -207,6 +215,8 @@ class InterpolationSet(object):
                                                               self.delta_b_vec[j], -
                                                               self.delta_gamma_a_vec[j], -
                                                               self.delta_gamma_b_vec[j], -
+                                                              self.delta_c_vec[j], -
+                                                              self.delta_d_vec[j], -
                                                               self.delta_gamma_c_vec[j], -
                                                               self.delta_gamma_d_vec[j])
 
@@ -326,8 +336,8 @@ class Interpolation(object):
             elif i == n - 1:
                 a_n_vector[i] = - Vn[i - 1, 0] / hi
                 b_n_vector[i] = - ln[i - 1, 0] / hi
-                c_n_vector[i] = i * Vn[i - 1, 0]
-                d_n_vector[i] = i * ln[i - 1, 0]
+                c_n_vector[i] = (i + 1) * Vn[i - 1, 0]
+                d_n_vector[i] = (i + 1) * ln[i - 1, 0]
 
         interpol_inspace_set = InterpolSetInSpace()
         interpol_inspace_set.set_values(
@@ -359,6 +369,8 @@ class Interpolation(object):
         delta_gamma_b_vec = np.multiply(
             cur_intpl_inspace_set.b_vec, cur_time_step) - np.multiply(
             prev_intpl_inspace_set.b_vec, cur_time_step - 1)
+        delta_c_vec = prev_intpl_inspace_set.c_vec - cur_intpl_inspace_set.c_vec
+        delta_d_vec = prev_intpl_inspace_set.d_vec - cur_intpl_inspace_set.d_vec
         delta_gamma_c_vec = np.multiply(
             cur_intpl_inspace_set.c_vec, cur_time_step) - np.multiply(
             prev_intpl_inspace_set.c_vec, cur_time_step - 1)
@@ -375,6 +387,8 @@ class Interpolation(object):
             delta_b_vec,
             delta_gamma_a_vec,
             delta_gamma_b_vec,
+            delta_c_vec,
+            delta_d_vec,
             delta_gamma_c_vec,
             delta_gamma_d_vec)
 

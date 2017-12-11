@@ -146,11 +146,12 @@ class Functions(object):
 
     @staticmethod
     def intpl_in_time_and_space_func(
-            step, delta_a, delta_b, delta_gamma_a, delta_gamma_b, delta_gamma_c, delta_gamma_d):
+            step, delta_a, delta_b, delta_gamma_a, delta_gamma_b, delta_c, delta_d, delta_gamma_c, delta_gamma_d):
         'U(x,t) function after doing interpolation in both space and time'
 
         # U(x) = (1/step) * (delta_a * alpha + delta_b * beta) * t * x +
         #         (delta_gamma_a * alpha + delta_gamma_b * beta) * x +
+        #         (1/step) * (delta_c * alpha + delta_d * beta) * t
         #         (delta_gamma_c * alpha + delta_gamma_d * beta)
 
         assert isinstance(step, float)
@@ -159,12 +160,15 @@ class Functions(object):
         assert isinstance(delta_b, float)
         assert isinstance(delta_gamma_a, float)
         assert isinstance(delta_gamma_b, float)
+        assert isinstance(delta_c, float)
+        assert isinstance(delta_d, float)
         assert isinstance(delta_gamma_c, float)
         assert isinstance(delta_gamma_d, float)
 
         func = Function('func')
         func = (1 / step) * (delta_a * alpha + delta_b * beta) * t * x + \
             (delta_gamma_a * alpha + delta_gamma_b * beta) * x + \
+            (1/ step) * (delta_c * alpha + delta_b * beta) * t + \
             delta_gamma_c * alpha + delta_gamma_d * beta
 
         func_eval = lambdify((t, x, alpha, beta), func)
