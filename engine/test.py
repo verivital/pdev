@@ -46,12 +46,6 @@ if __name__ == '__main__':
     dPde.set_unsafe_set(unsafe_mat.tocsc(), unsafe_vector.tocsc())
     verifier.on_fly_check_dPde(dPde, toTimeStep)
 
-    #residual = verifier.compute_residul_r_u(dPde)
-    #print"\nresidual r(u) = \n{}".format(residual)
-    #dis_err_set = verifier.get_error_dreach_set(dPde)
-    #print"\nerror discrete reach set = \n{}".format(dis_err_set)
-    #min_err_vec, _, max_err_vec, _ = dis_err_set[toTimeStep - 1].get_min_max()
-
     ############################################################
     # test ReachSetAssembler
     RSA = ReachSetAssembler()

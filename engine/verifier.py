@@ -3,11 +3,15 @@ This module implements continuous/discreted verifier for PDE automaton
 Dung Tran: Nov/2017
 '''
 
-from scipy.sparse import csc_matrix, lil_matrix, hstack
+from scipy.sparse import csc_matrix, lil_matrix
+from scipy.optimize import minimize
 from engine.pde_automaton import DPdeAutomaton
-from engine.set import DReachSet, GeneralSet, RectangleSet2D, RectangleSet3D
-from engine.interpolation import Interpolation, InterpolSetInSpace, InterpolationSet
+from engine.set import DReachSet
+from engine.interpolation import Interpolation
 from engine.fem import Fem1D
+from engine.functions import Functions
+from engine.specification import SafetySpecification
+import math
 
 
 class ReachSetAssembler(object):
@@ -173,284 +177,187 @@ class ReachSetAssembler(object):
 
 
 class Verifier(object):
-    'verifier for discreted pde automaton'
-
-    # verify the safety of discreted pde automaton from step 0 to step N
-    # if unsafe region is reached, produce a trace
+    'verifier for the pde automaton'
 
     def __init__(self):
 
-        # use for computing and checking reach set of discrete Pde
-        self.status_dis = None    # 0=safe /1=unsafe
-        self.current_V = None    # Vn = A^n * Vn-1, V0 = U0
-        self.current_l = None    # ln = Sigma_[i=0 to i = n-1] (A^i * b)
-        # include all reach sets of discrete Pde from 0 to current step
-        self.to_current_step_set = []
-        self.to_current_step_line_set = []
-        # current constraint to check safety based on discrete reach set
-        self.current_constraints = None
-        self.unsafe_trace = []    # trace for unsafe case of discrete Pdeautomaton
+        self.status = None
+        self.violate_time_point = None
+        self.unsafe_point = None    # a point x in the rod reach unsafe region
+        self.unsafe_trace = []    # a trace of point x along with time t
 
-        # use for error analysis
-        self.dis_err_set = []
-        self.residual_r_u = []
-
-        # use for computing and checking interpolation set (piecewise
-        # continuous in space and time)
-        self.status_cont = None
-        # list of interpolation set in space upto current step
-        self.to_cur_step_intpl_inspace_set = []
-        # list of interpolation set in both time and space upto current step
-        self.to_cur_step_intpl_set = []
-
-    def get_dreach_set(self, dPde, toTimeStep):
-        'compute reach set of discrete PDE to the toTimeStep in specific direction'
-
-        assert isinstance(toTimeStep, int)
-        assert toTimeStep >= 0
-        assert isinstance(dPde, DPdeAutomaton)
-
-        current_set = DReachSet()
-        self.current_V = None
-        self.current_l = None
-        self.to_current_step_set = []
-
-        for i in xrange(0, toTimeStep + 1):
-
-            if i == 0:
-                self.current_V = dPde.init_vector
-                self.current_l = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
-            else:
-                self.current_V = dPde.matrix_a * self.current_V
-                current_vector_b = Fem1D.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, i)
-                dPde.set_vector_b(current_vector_b)
-                self.current_l = current_vector_b + dPde.matrix_a * self.current_l
-            current_set.set_reach_set(dPde.alpha_range, dPde.beta_range, self.current_V, self.current_l)
-            self.to_current_step_set.append(current_set)
-
-        return self.to_current_step_set
-
-    def on_fly_check_dPde(self, dPde, toTimeStep):
-        'On-the-fly safety checking for discrete Pde automaton '
-
-        assert dPde.matrix_a is not None, 'specify dPde first'
-        assert dPde.unsafe_set is not None, 'specify unsafe set first'
-        assert dPde.alpha_range is not None, 'specify range of perturbation first'
-        assert dPde.beta_range is not None, 'specify perturbation first'
-
-        direct_matrix = dPde.unsafe_set.matrix_c
-        unsafe_vector = dPde.unsafe_set.vector_d
-        self.current_V = None
-        self.current_l = None
-
-        current_constraints = GeneralSet()
-
-        for i in xrange(0, toTimeStep + 1):
-            if i == 0:
-                self.current_V = dPde.init_vector
-                self.current_l = csc_matrix(
-                    (dPde.init_vector.shape[0], 1), dtype=float)
-                inDirection_Current_V = direct_matrix * self.current_V
-                inDirection_Current_l = direct_matrix * self.current_l
-
-            else:
-                self.current_V = dPde.matrix_a * self.current_V
-                current_vector_b = Fem1D.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, i)
-                dPde.set_vector_b(current_vector_b)
-                self.current_l = current_vector_b + dPde.matrix_a * self.current_l
-
-                inDirection_Current_V = direct_matrix * self.current_V
-                inDirection_Current_l = direct_matrix * self.current_l
-
-            print "\n V_{} = \n{}, \n l_{} = {}".format(i, self.current_V.todense(), i, self.current_l.todense())
-
-            constraint_matrix = hstack([inDirection_Current_V, inDirection_Current_l])
-            current_constraints.set_constraints(constraint_matrix, unsafe_vector)    # construct constraints for current step
-
-            # check feasible of current constraint
-            feasible_res = current_constraints.check_feasible(dPde.alpha_range, dPde.beta_range)
-            if feasible_res.status == 2:
-                self.status_dis = 0    # discreted pde system is safe
-            elif feasible_res.status == 0:
-                self.status_dis = 1    # discreted pde system is unsafe
-            elif feasible_res == 1:
-                self.status_dis = 2    # iteration limit reached
-            elif feasible_res == 3:
-                self.status_dis = 3    # problem appears to be unbounded
-
-            if self.status_dis == 0:
-                print"\nTimeStep {}: SAFE".format(i)
-            elif self.status_dis == 1:
-                print"\nTimeStep {}: UNSAFE".format(i)
-                feasible_alpha_beta = feasible_res.x
-                feasible_alpha = feasible_alpha_beta[0]
-                feasible_beta = feasible_alpha_beta[1]
-                print "\nalpha = {}, beta = {}".format(feasible_alpha, feasible_beta)
-                # produce a trace lead dPde to unsafe region
-                self.unsafe_trace = dPde.get_trace(feasible_alpha, feasible_beta, i)
-            else:
-                print"\nTimeStep{}: Error in checking safe/unsafe"
-
-    def get_interpolation_set(self, dPde, toTimeStep):
-        'compute interpolation set to toTimeStep'
-
-        assert isinstance(toTimeStep, int)
-        assert toTimeStep >= 1
-        assert isinstance(dPde, DPdeAutomaton)
-
-        self.current_V = None
-        self.current_l = None
-
-        for i in xrange(0, toTimeStep + 1):
-
-            # get interpolation set in space
-            if i == 0:
-                self.current_V = dPde.init_vector
-                self.current_l = csc_matrix(
-                    (dPde.init_vector.shape[0], 1), dtype=float)
-            else:
-                self.current_V = dPde.matrix_a * self.current_V
-                current_vector_b = Fem1D.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, i)
-                dPde.set_vector_b(current_vector_b)
-                self.current_l = current_vector_b + dPde.matrix_a * self.current_l
-
-            cur_intpl_inspace_set = Interpolation.interpolate_in_space(
-                dPde.xlist, self.current_V.todense(), self.current_l.todense())
-            self.to_cur_step_intpl_inspace_set.append(cur_intpl_inspace_set)
-
-            # get interpolation set in both time and space
-            if i >= 1:
-                cur_intpl_set = Interpolation.increm_interpolation(
-                    dPde.time_step, i, self.to_cur_step_intpl_inspace_set[i - 1], self.to_cur_step_intpl_inspace_set[i])
-                self.to_cur_step_intpl_set.append(cur_intpl_set)
-
-        return self.to_cur_step_intpl_inspace_set, self.to_cur_step_intpl_set
-
-    def get_intpl_inspace_boxes(self, dPde, toTimeStep):
-        'get boxes containing interpolation inspace set U_n(x) at time step t = n * step'
+    def check_safety(self, dPde, safety_specification):
+        'verify safety of Pde automaton'
 
         assert isinstance(dPde, DPdeAutomaton)
-        self.get_interpolation_set(dPde, toTimeStep)
-        assert dPde.alpha_range is not None and dPde.beta_range is not None, 'set range for alpha and beta'
-        n = len(self.to_cur_step_intpl_inspace_set)
+        assert isinstance(safety_specification, SafetySpecification)
 
-        boxes_list = []    # list of boxes along time step
+        # check consistency
+        xlist = dPde.xlist
+        step = dPde.time_step
+        assert xlist is not None, 'empty dPde'
+        x_range = safety_specification.x_range
 
-        for j in xrange(0, n):
-            intpl_inspace_set = self.to_cur_step_intpl_inspace_set[j]
-            u_min_vec, _, u_max_vec, _ = intpl_inspace_set.get_min_max(
-                dPde.alpha_range, dPde.beta_range)
+        if x_range[0] < xlist[0] or x_range[1] > xlist[len(xlist) - 1]:
+            raise ValueError('x_range is out of range of dPde.xlist')
 
-            boxes = []    # list of boxes along space step
-            for i in xrange(0, u_min_vec.shape[0]):
-                rect = RectangleSet2D()
-                rect.set_bounds(dPde.xlist[i], dPde.xlist[i + 1], u_min_vec[i], u_max_vec[i])
-                boxes.append(rect)
+        u1 = safety_specification.u1
+        u2 = safety_specification.u2
+        assert u1 is not None or u2 is not None, 'u1 and u2 are both None'
+        x1 = safety_specification.x_range[0]
+        x2 = safety_specification.x_range[1]
+        T1 = safety_specification.t_range[0]
+        T2 = safety_specification.t_range[1]
 
-            boxes_list.append(boxes)
+        end_time_step = int(math.ceil(T2 / step))
+        start_time_step = int(math.floor(T1 / step))
 
-        return boxes_list
+        m = len(xlist)
+        for i in xrange(1, m):
+            if xlist[i - 1] <= x1 < xlist[i]:
+                start_point = i - 1
+                break
+            elif x1 == xlist[i]:
+                start_point = i
+                break
 
-    def get_intpl_boxes(self, dPde, toTimeStep):
-        'get boxes containing interpolation set U(x,t)'
+        for i in xrange(0, m):
+            if xlist[m - 2 - i] < x2 <= xlist[m - 1 - i]:
+                end_point = m - 1 - i
+                break
+            elif x2 == xlist[m - 2 - i]:
+                end_point = m - 2 - i
+                break
 
-        assert isinstance(dPde, DPdeAutomaton)
-        self.get_interpolation_set(dPde, toTimeStep)
-        assert dPde.alpha_range is not None and dPde.beta_range is not None, 'set range for alpha and beta'
-        n = len(self.to_cur_step_intpl_set)
+        # compute continuous reachable set
+        _, _, _, _, _, bloated_set = ReachSetAssembler.get_interpolationset(dPde, end_time_step)
 
-        boxes_list = []
+        # decompose x1 x2 into list of x_range
+        x_range_list = []
 
-        for j in xrange(0, n):
-            intpl_set = self.to_cur_step_intpl_set[j]
-            u_min_vec, _, u_max_vec, _ = intpl_set.get_min_max(dPde.alpha_range, dPde.beta_range)
+        for i in xrange(start_point, end_point):
+            if i == start_point:
+                x_range_list.append((x1, xlist[start_point + 1]))
+            elif i == end_point - 1:
+                x_range_list.append((xlist[end_point - 2], x2))
+            elif start_point < i < end_point - 1:
+                x_range_list.append((xlist[i], xlist[i + 1]))
 
-            boxes = []    # list of boxes along space step
-            for i in xrange(0, u_min_vec.shape[0]):
-                rect3d = RectangleSet3D()
-                xmin = dPde.xlist[i]
-                xmax = dPde.xlist[i + 1]
-                ymin = float(j) * dPde.time_step
-                ymax = float(j + 1) * dPde.time_step
-                rect3d.set_bounds(xmin, xmax, ymin, ymax, u_min_vec[i], u_max_vec[i])
-                boxes.append(rect3d)
+        # decompose T1, T2 into list of t_range
+        t_range_list = []
+        for j in xrange(start_time_step, end_time_step):
+            if j == start_time_step:
+                t_range_list.append((T1, (start_time_step + 1) * step))
+            elif j == end_time_step - 1:
+                t_range_list.append(((end_time_step - 2) * step, T2))
+            elif start_time_step < j < end_time_step - 1:
+                t_range_list.append((j * step, (j + 1) * step))
 
-            boxes_list.append(boxes)
+        # check safety
+        print "\nstart_time_step = {}".format(start_time_step)
+        print "\nend_time_step = {}".format(end_time_step)
+        for j in xrange(start_time_step, end_time_step):
+            print "\n j = {}".format(j)
+            bl_set = bloated_set[j]
+            time_range = t_range_list[j - start_time_step]
+            print "\ntime_range = {}".format(time_range)
 
-        return boxes_list
+            for i in xrange(start_point, end_point):
+                print "\ni = {}".format(i)
+                x_range = x_range_list[i - start_point]
+                print "\nx_range = {}".format(x_range)
 
-    def compute_residul_r_u(self, dPde):
-        'get compute r(u) = beta * f - u, use later to compute the error reachable set'
+                min_func = Functions.intpl_in_time_and_space_func(step, bl_set.delta_a_vec[i],
+                                                                  bl_set.delta_b_vec[i],
+                                                                  bl_set.delta_gamma_a_vec[i],
+                                                                  bl_set.delta_gamma_b_vec[i],
+                                                                  bl_set.delta_c_vec[i],
+                                                                  bl_set.delta_d_vec[i],
+                                                                  bl_set.delta_gamma_c_vec[i],
+                                                                  bl_set.delta_gamma_d_vec[i])
 
-        assert isinstance(dPde, DPdeAutomaton)
-        assert self.to_current_step_set is not None, 'no discrete reach set to comput r(u) = beta * f - u'
+                max_func = Functions.intpl_in_time_and_space_func(step, - bl_set.delta_a_vec[i],
+                                                                  - bl_set.delta_b_vec[i],
+                                                                  - bl_set.delta_gamma_a_vec[i],
+                                                                  - bl_set.delta_gamma_b_vec[i],
+                                                                  - bl_set.delta_c_vec[i],
+                                                                  - bl_set.delta_d_vec[i],
+                                                                  - bl_set.delta_gamma_c_vec[i],
+                                                                  - bl_set.delta_gamma_d_vec[i])
 
-        n = len(self.to_current_step_set)
-        assert n >= 2, 'need at least two discrete reach set to compute r(u)'
-        residual_r_u = DReachSet()
-        dPde.residual_r_u = []    # reset list of residual
+                x0 = [time_range[0], x_range[0], dPde.alpha_range[0], dPde.beta_range[0]]
 
-        def get_V1_l1(V, l, xlist):
-            '\int (u_n(x) p_i(x))dx = alpha * V1 + beta * l1'
+                bnds = (time_range, x_range, dPde.alpha_range, dPde.beta_range)
 
-            assert isinstance(V, csc_matrix)
-            assert isinstance(l, csc_matrix)
-            assert V.shape == l.shape
-            n = V.shape[0]
-            assert n == len(xlist) - 2
+                min_res = minimize(
+                    min_func,
+                    x0,
+                    method='L-BFGS-B',
+                    bounds=bnds,
+                    tol=1e-10, options={'disp': False})    # add options={'disp': True} to display optimization result
+                max_res = minimize(
+                    max_func,
+                    x0,
+                    method='L-BFGS-B',
+                    bounds=bnds,
+                    tol=1e-10, options={'disp': False})    # add  options={'disp': True} to display optimization result
 
-            V1 = lil_matrix((n, 1), dtype=float)
-            l1 = lil_matrix((n, 1), dtype=float)
-            for i in xrange(0, n):
-                hi = xlist[i + 1] - xlist[i]
-                hi_plus_1 = xlist[i + 2] - xlist[i + 1]
-                if i == 0:
-                    V1[i, 0] = V[i, 0] * (hi / 3 + hi_plus_1 / 3) + V[i + 1, 0] * hi_plus_1 / 6
-                    l1[i, 0] = l[i, 0] * (hi / 3 + hi_plus_1 / 3) + l[i + 1, 0] * hi_plus_1 / 6
-                elif i == n - 1:
-                    V1[i, 0] = V[i, 0] * (hi / 3 + hi_plus_1 / 3) + V[i - 1, 0] * hi / 6
-                    l1[i, 0] = l[i, 0] * (hi / 3 + hi_plus_1 / 3) + l[i - 1, 0] * hi / 6
-                elif 0 < i < n - 1:
-                    V1[i, 0] = V[i, 0] * (hi / 3 + hi_plus_1 / 3) + V[i - 1, 0] * hi / 6 + V[i + 1, 0] * hi_plus_1 / 6
-                    l1[i, 0] = l[i, 0] * (hi / 3 + hi_plus_1 / 3) + l[i - 1, 0] * hi / 6 + l[i + 1, 0] * hi_plus_1 / 6
+                min_points = []
+                max_points = []
+                if min_res.status == 0:
+                    min_value = min_res.fun
+                    min_points.append(min_res.x)
+                else:
+                    print "\nmin_res.status = {}".format(min_res.status)
+                    print "\nminimization message: {}".format(min_res.message)
+                    raise ValueError(
+                        'minimization for interpolation function fail!')
 
-            return V1, l1
+                if max_res.status == 0:
+                    max_value = -max_res.fun
+                    max_points.append(max_res.x)
+                else:
+                    print "\nmax_res.status = {}".format(max_res.status)
+                    print "\nmaximization message: {}".format(max_res.message)
+                    raise ValueError(
+                        'maximization for interpolation function fail!')
 
-        for i in xrange(1, n):
-            prev_set = self.to_current_step_set[i - 1]
-            cur_set = self.to_current_step_set[i]
+                if u1 is not None and u2 is not None:
+                    if min_value < u1:
+                        self.status = 'Unsafe'
+                        feas_sol = min_points
+                        break
+                    elif max_value > u2:
+                        self.status = 'Unsafe'
+                        feas_sol = max_points
+                        break
+                elif u1 is None and u2 is not None:
+                    if max_value > u2:
+                        self.status = 'Unsafe'
+                        feas_sol = max_points
+                        break
+                elif u1 is not None and u2 is None:
+                    if min_value < u1:
+                        self.status = 'Unsafe'
+                        feas_sol = min_points
+                        break
 
-            prev_V1, prev_l1 = get_V1_l1(prev_set.Vn, prev_set.ln, dPde.xlist)
-            cur_V1, cur_l1 = get_V1_l1(cur_set.Vn, cur_set.ln, dPde.xlist)
+            if self.status == 'Unsafe':
+                fs = feas_sol[0]
+                self.violate_time_point = fs[0]
+                self.unsafe_point = fs[1]
+                alpha_value = fs[2]
+                beta_value = fs[3]
+                print "\nfeas_solution = {}".format(feas_sol)
+                break
 
-            residual_r_u.Vn = prev_V1 - cur_V1
-            residual_r_u.ln = dPde.vector_b[i] + prev_l1 - cur_l1
-            self.residual_r_u.append(residual_r_u)
+        # return safe or unsafe and unsafe trace which is a list of function of t
+        self.unsafe_trace = []
+        if self.status == 'Unsafe':
+            for j in xrange(0, int(math.floor(self.violate_time_point / step)) + 1):
+                bl_set = bloated_set[j]
+                self.unsafe_trace.append(bl_set.get_trace_func(alpha_value, beta_value, self.unsafe_point))
+        else:
+            self.status = 'Safe'
 
-        return self.residual_r_u
-
-    def get_error_dreach_set(self, dPde):
-        'compute e[n] = A e[n - 1] + b[n]'
-
-        assert isinstance(dPde, DPdeAutomaton)
-        self.residual_r_u = []    # reset the residual
-        Verifier.compute_residul_r_u(self, dPde)
-
-        n = len(self.residual_r_u)
-        self.dis_err_set = []
-        error = DReachSet()
-        print "\nn={}".format(n)
-        for i in xrange(0, n):
-            ru = self.residual_r_u[i]
-            if i == 0:
-                error.Vn = dPde.inv_b_matrix * ru.Vn
-                error.ln = dPde.inv_b_matrix * ru.ln
-            else:
-                error.Vn = dPde.inv_b_matrix * ru.Vn + dPde.matrix_a * self.dis_err_set[i - 1].Vn
-                error.ln = dPde.inv_b_matrix * ru.ln + dPde.matrix_a * self.dis_err_set[i - 1].ln
-
-            error.alpha_range = dPde.alpha_range
-            error.beta_range = dPde.beta_range
-            self.dis_err_set.append(error)
-
-        return self.dis_err_set
+        return self.status, self.unsafe_trace, self.unsafe_point, self.violate_time_point

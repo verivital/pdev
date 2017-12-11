@@ -5,7 +5,6 @@ Dung Tran: Nov/2017
 
 from scipy.sparse import csc_matrix
 import numpy as np
-from engine.set import GeneralSet
 
 
 class DPdeAutomaton(object):
@@ -94,21 +93,6 @@ class DPdeAutomaton(object):
         assert isinstance(beta_range, tuple) and len(beta_range) == 2 and beta_range[0] <= beta_range[1], 'invalid beta_range'
         self.alpha_range = alpha_range
         self.beta_range = beta_range
-
-    def set_unsafe_set(self, unsafe_matrix, unsafe_vector):
-        'define the unsafe set of the automaton'
-
-        # unsafe Set defined by unsafe_matrix * U <= unsafe_vector
-        assert isinstance(unsafe_matrix, csc_matrix)
-        assert isinstance(unsafe_vector, csc_matrix)
-        assert unsafe_matrix.shape[0] == unsafe_vector.shape[0], 'inconsistency, \
-             direction_matrix.shape[0] = {} != unsafe_vector.shape[0] = {}'\
-             .format(unsafe_matrix.shape[0], unsafe_vector.shape[0])
-
-        self.unsafe_set = GeneralSet()
-        self.unsafe_set.set_constraints(unsafe_matrix, unsafe_vector)
-
-        return self.unsafe_set
 
     def get_trace(self, alpha_value, beta_value, num_steps):
         'produce a trace of the discreted ODE model corresponding to specific values of alpha and beta'

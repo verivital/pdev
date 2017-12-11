@@ -112,7 +112,8 @@ class InterpolSetInSpace(object):
                 raise ValueError('max-optimization fail')
 
             box_2D = RectangleSet2D()
-            box_2D.set_bounds(self.xlist[i], self.xlist[i + 1], min_vec[i], max_vec[i])
+            box_2D.set_bounds(
+                self.xlist[i], self.xlist[i + 1], min_vec[i], max_vec[i])
             boxes_2D_list.append(box_2D)
 
         return boxes_2D_list, min_vec, min_points, max_vec, max_points
@@ -264,20 +265,43 @@ class InterpolationSet(object):
             ymin = (self.cur_time_step - 1) * self.step
             ymax = (self.cur_time_step) * self.step
 
-            #print "\n at space step = {}, at time step = {}".format(j, self.cur_time_step)
-            #print "\ndelta_a_vec[{}] = {}, delta_b_vec[{}] = {}".format(j, self.delta_a_vec[j], j, self.delta_b_vec[j])
-            #print "\ndelta_gamma_a_vec[{}] = {}, delta_gamma_b_vec[{}] = {}".format(j, self.delta_gamma_a_vec[j], j, self.delta_gamma_b_vec[j])
-            #print "\ndelta_gamma_c_vec[{}] = {}, delta_gamma_d_vec[{}] = {}".format(j, self.delta_gamma_c_vec[j], j, self.delta_gamma_d_vec[j])
-            #print"\ntmin = {}, tmax = {}".format(ymin, ymax)
-            #print"\nxmin = {}, xmax = {}".format(self.xlist[j], self.xlist[j + 1])
-            #print"\nzmin = {}, zmax = {}".format(min_vec[j], max_vec[j])
-            #if min_vec[j] < 0 or max_vec[j] < 0:
-            #    print "\nNOTICE HERE!!!!!!!!!!!!!!!!!!!!!"
             box_3D = RectangleSet3D()
-            box_3D.set_bounds(self.xlist[j], self.xlist[j + 1], ymin, ymax, min_vec[j], max_vec[j])
+            box_3D.set_bounds(self.xlist[j],
+                              self.xlist[j + 1],
+                              ymin,
+                              ymax,
+                              min_vec[j],
+                              max_vec[j])
             boxes_3D_list.append(box_3D)
 
         return boxes_3D_list, min_vec, min_points, max_vec, max_points
+
+    def get_trace_func(self, alpha_value, beta_value, x_value):
+        'return a trace function for specific values of alpha and beta'
+
+        assert isinstance(alpha_value, float)
+        assert isinstance(beta_value, float)
+        m = len(self.xlist)
+        assert isinstance(
+            x_value, float) and self.xlist[0] <= x_value <= self.xlist[m - 1]
+
+        for i in xrange(1, m):
+            if self.xlist[i - 1] < x_value <= self.xlist[i]:
+                delta_a = self.delta_a_vec[i]
+                delta_b = self.delta_b_vec[i]
+                delta_c = self.delta_c_vec[i]
+                delta_d = self.delta_d_vec[i]
+                delta_gamma_a = self.delta_gamma_a_vec[i]
+                delta_gamma_b = self.delta_gamma_b_vec[i]
+                delta_gamma_c = self.delta_gamma_c_vec[i]
+                delta_gamma_d = self.delta_gamma_d_vec[i]
+
+                break
+
+        trace_func = Functions.trace_func(self.step, delta_a, delta_b, delta_gamma_a, delta_gamma_b,
+                                          delta_c, delta_d, delta_gamma_c, delta_gamma_d, alpha_value, beta_value, x_value)
+
+        return trace_func
 
 
 class Interpolation(object):

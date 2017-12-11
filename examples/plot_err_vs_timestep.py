@@ -58,7 +58,7 @@ if __name__ == '__main__':
 
         ax3 = pl3.plot_vlines(ax3, time_list.tolist(), e_lines_at_x_8_list, colors=colors[j], linestyles='solid')
 
-    ax3.legend([r'$time step = 0.2$', r'$time step = 0.1$', r'$time step = 0.05$'])
+    ax3.legend([r'$k = 0.2$', r'$k = 0.1$', r'$k = 0.05$'])
     ax3.set_ylim(0, 0.9)
     ax3.set_xlim(-0.2, 10.5)
     plt.xticks(fontsize=20)

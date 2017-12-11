@@ -180,6 +180,39 @@ class Functions(object):
         return my_func
 
     @staticmethod
+    def trace_func(
+            step, delta_a, delta_b, delta_gamma_a, delta_gamma_b, \
+            delta_c, delta_d, delta_gamma_c, delta_gamma_d, alpha_value, beta_value, x_value):
+        'a continuous trace for specific values of alpha and beta and at specific point x'
+
+        assert isinstance(step, float)
+        assert step > 0, 'invalid time step'
+        assert isinstance(alpha_value, float) and isinstance(beta_value, float)
+        assert isinstance(x_value, float)
+        assert isinstance(delta_a, float)
+        assert isinstance(delta_b, float)
+        assert isinstance(delta_gamma_a, float)
+        assert isinstance(delta_gamma_b, float)
+        assert isinstance(delta_c, float)
+        assert isinstance(delta_d, float)
+        assert isinstance(delta_gamma_c, float)
+        assert isinstance(delta_gamma_d, float)
+
+        func = Function('func')
+        func = (1 / step) * (delta_a * alpha_value + delta_b * beta_value) * t * x_value + \
+            (delta_gamma_a * alpha_value + delta_gamma_b * beta_value) * x_value + \
+            (1/ step) * (delta_c * alpha_value + delta_b * beta_value) * t + \
+            delta_gamma_c * alpha_value + delta_gamma_d * beta_value
+
+        func_eval = lambdify((t), func)
+
+        def my_func(y):
+            'convert to python numpy function'
+            return func_eval(*tuple(y))
+
+        return my_func
+
+    @staticmethod
     def U_n_i_func(V_n_i, l_n_i):
         'U_n,i is numerical value of U(x,t) at exactly mesh point x[i] and step n'
 
