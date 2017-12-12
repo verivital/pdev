@@ -30,9 +30,9 @@ if __name__ == '__main__':
     # set safety specification
     SP = SafetySpecification()
     u1 = 0.0
-    u2 = 0.2
+    u2 = 0.3
     x_range = [7.2, 8.3]
-    t_range = [0.05, 0.3]
+    t_range = [8.0, 10.0]
 
     print "\nset safety specification"
     SP.set_constraints(u1, u2, x_range, t_range)
@@ -60,12 +60,12 @@ if __name__ == '__main__':
         fig, ax = plt.subplots(1, 1)
         pl = Plot()
         ax = pl.plot_unsafe_trace(ax, result)
-        ax.set_xlim(0, 0.3)
-        ax.set_ylim(-0.5, 1.0)
+        ax.set_xlim(0, 10)
+        ax.set_ylim(0, 1.0)
         plt.xticks(fontsize=20)
         plt.yticks(fontsize=20)
         plt.xlabel('$t$', fontsize=20)
         plt.ylabel(r'$\bar{}(x={},t)$'.format('u', result.unsafe_x_point), fontsize=20)
         fig.suptitle('Unsafe Trace at $x = {}$'.format(result.unsafe_x_point), fontsize=25)
-        fig.savefig('bloated_x_dreachset.pdf')
+        fig.savefig('unsafe_trace.pdf')
         plt.show()

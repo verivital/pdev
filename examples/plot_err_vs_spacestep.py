@@ -4,6 +4,7 @@ Dung Tran: 12/2017
 '''
 
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 from engine.fem import Fem1D
 from engine.verifier import ReachSetAssembler
 from engine.plot import Plot
@@ -16,14 +17,15 @@ if __name__ == '__main__':
     # generate dPde automaton
     FEM = Fem1D()
     L = 10.0    # length of rod
-    num_mesh_points = [10, 20, 40]     # number of mesh points
-    colors = ['r', 'm', 'g']
+    num_mesh_points = [10, 20]     # number of mesh points
+    colors = ['r', 'g']
+    labels = ['h = 1.0', 'h = 0.5']
     step = 0.1
     x = 8.0
 
-    fig3 = plt.figure()
-    ax3 = fig3.add_subplot(111)
-    pl3 = Plot()
+    fig1 = plt.figure()
+    ax1 = fig1.add_subplot(111)
+    pl1 = Plot()
 
     for j in xrange(0, len(num_mesh_points)):
         num_mesh_point = num_mesh_points[j]
@@ -46,27 +48,20 @@ if __name__ == '__main__':
         ############################################################
         # compute error dicrete reachable set
         RSA = ReachSetAssembler()
-        _, e_dset, _ = RSA.get_dreachset(dPde, toTimeStep)    # compute discrete reachable set
-        e_lines_at_x_8_list = []
-        for i in xrange(0, toTimeStep + 1):
-            e_lines_at_x_8, _, _, _, _ = e_dset[i].get_lines_set()
-            e_lines_at_x_8_list.append(e_lines_at_x_8[x_ind])
+        _, e_inspace, _, _, _, _ = RSA.get_interpolationset(dPde, toTimeStep)
+        e_boxes = e_inspace[toTimeStep].get_2D_boxes(alpha_range, beta_range)
 
-        ############################################################
-        # Plot dreach set of e at x = 8
+        ax1 = pl1.plot_boxes(ax1, e_boxes, facecolor=colors[j], edgecolor=colors[j])
 
-        ax3 = pl3.plot_vlines(ax3, time_list.tolist(), e_lines_at_x_8_list, colors=colors[j], linestyles='solid')
-
-    ax3.legend([r'$h = {}$'.format(L / num_mesh_points[0]),
-                r'$h = {}$'.format(format(L / num_mesh_points[1])),
-                r'$h = {}$'.format(format(L / num_mesh_points[2]))])
-
-    ax3.set_ylim(0, 0.9)
-    ax3.set_xlim(-0.2, 10.5)
+    red_patch = mpatches.Patch(color='r', label='$h = 1.0$')
+    green_patch = mpatches.Patch(color='g', label='$h = 0.5$')
+    ax1.set_ylim(0.0, 0.4)
+    ax1.set_xlim(0, 10.5)
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
-    plt.xlabel('$t$', fontsize=20)
-    plt.ylabel(r'$\tilde{}(x={},t)$'.format('e', x), fontsize=20)
-    fig3.suptitle('Error Vs. Space-Step', fontsize=25)
-    fig3.savefig('err_vs_spacestep.pdf')
+    plt.xlabel('$x$', fontsize=20)
+    plt.ylabel(r'$\bar{e}(x,t=10s)$', fontsize=20)
+    fig1.suptitle('Error Vs. Space-Step at $t=10s$', fontsize=25)
+    fig1.savefig('err_vs_space_step.pdf')
+    plt.legend(handles=[red_patch, green_patch])
     plt.show()
