@@ -186,8 +186,9 @@ class VerificationResult(object):
         self.unsafe_x_point = None        # position that system reach unsafe state
         self.unsafe_u_point = None        # value of u(x,t) at unsafe state
         self.unsafe_trace_funcs = []    # u(x,t) at unsafe_x_point is a list of functions of t
-        self.unsafe_numerical_trace = None    # numerical trace for plotting
+
         self.step = None    # time step
+        self.safety_specification = None    # used for plotting the result
 
     def generate_numerical_trace(self):
         'generate a numerical trace for unsafe case'
@@ -203,7 +204,21 @@ class VerificationResult(object):
             time_list.append(j * self.step)
             u_list.append(func([time_list[j]]))
 
+        time_list.append(n * self.step)
+        func = self.unsafe_trace_funcs[n - 1]
+        u_list.append(func([n * self.step]))
+
         return (time_list, u_list)
+
+    def get_unsafe_point(self):
+        'return the unsafe point'
+
+        return (self.unsafe_time_point, self.unsafe_x_point, self.unsafe_u_point)
+
+    def get_specification(self):
+        'return safety specification'
+
+        return self.safety_specification
 
 
 class Verifier(object):
@@ -223,6 +238,7 @@ class Verifier(object):
         xlist = dPde.xlist
         step = dPde.time_step
         self.result.step = step
+        self.result.safety_specification = safety_specification
         assert xlist is not None, 'empty dPde'
         x_range = safety_specification.x_range
 
@@ -267,18 +283,18 @@ class Verifier(object):
             if i == start_point:
                 x_range_list.append((x1, xlist[start_point + 1]))
             elif i == end_point - 1:
-                x_range_list.append((xlist[end_point - 2], x2))
+                x_range_list.append((xlist[end_point - 1], x2))
             elif start_point < i < end_point - 1:
                 x_range_list.append((xlist[i], xlist[i + 1]))
 
         # decompose T1, T2 into list of t_range
         t_range_list = []
-        for j in xrange(start_time_step, end_time_step):
+        for j in xrange(start_time_step, end_time_step + 1):
             if j == start_time_step:
                 t_range_list.append((T1, (start_time_step + 1) * step))
-            elif j == end_time_step - 1:
-                t_range_list.append(((end_time_step - 2) * step, T2))
-            elif start_time_step < j < end_time_step - 1:
+            elif j == end_time_step:
+                t_range_list.append(((end_time_step - 1) * step, T2))
+            elif start_time_step < j < end_time_step:
                 t_range_list.append((j * step, (j + 1) * step))
 
         # check safety

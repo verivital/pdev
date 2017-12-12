@@ -8,7 +8,10 @@ from matplotlib.axes import Axes
 from engine.set import RectangleSet2D, RectangleSet3D, LineSet
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from mpl_toolkits.mplot3d.axes3d import Axes3D
+from engine.verifier import VerificationResult
+from engine.specification import SafetySpecification
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 class Plot(object):
@@ -181,5 +184,43 @@ class Plot(object):
 
         for boxes_list in interpolationset_list:
             ax = Plot.plot_3d_boxes(ax, boxes_list, facecolor, linewidth, edgecolor)
+
+        return ax
+
+    @staticmethod
+    def plot_unsafe_region(ax, safety_sp):
+        'plot unsafe region'
+
+        # todo: automatic adjust filled region
+        assert isinstance(ax, Axes)
+        assert isinstance(safety_sp, SafetySpecification)
+        u1 = safety_sp.u1
+        u2 = safety_sp.u2
+
+        if u1 is not None and u2 is not None:
+            y = [u1 - 1, u1, u2, u2 + 1]
+            ax.fill_between(safety_sp.t_range, y[0], y[1], facecolor='r', edgecolor='r')
+            ax.fill_between(safety_sp.t_range, y[2], y[3], facecolor='r', edgecolor='r')
+
+        return ax
+
+    @staticmethod
+    def plot_unsafe_trace(ax, verification_result):
+        'plot the unsafe trace and the safety specification and an unsafe point'
+
+        assert isinstance(verification_result, VerificationResult)
+        assert isinstance(ax, Axes)
+        res = verification_result
+        assert res.unsafe_trace_funcs != [], 'verification result is empty'
+
+        unsafe_trace = res.generate_numerical_trace()
+        unsafe_point = res.get_unsafe_point()
+        safety_sp = res.get_specification()
+        assert safety_sp is not None, 'safety region is empty'
+
+        ax = Plot.plot_unsafe_region(ax, safety_sp)
+        ax.plot(unsafe_trace[0], unsafe_trace[1], linestyle='solid', lw=2, marker='*')
+        ax.set_ylabel('$u(x={},t)$'.format(unsafe_point[1]))
+        ax.set_xlabel('$t$')
 
         return ax
