@@ -19,6 +19,7 @@ if __name__ == '__main__':
     num_mesh_points = [10, 20, 40]     # number of mesh points
     colors = ['r', 'm', 'g']
     step = 0.1
+    x = 8.0
 
     fig3 = plt.figure()
     ax3 = fig3.add_subplot(111)
@@ -29,15 +30,14 @@ if __name__ == '__main__':
         mesh_grid = np.arange(0, num_mesh_point + 1, step=1)
         mesh_points = np.multiply(mesh_grid, L / num_mesh_point)
         print "\nmesh_points = {}".format(mesh_points)
-        x = 8.0
-        x_ind = int(x * num_mesh_point / L) - 1
         toTimeStep = 100    # number of time steps
         time_grid = np.arange(0, toTimeStep + 1, step=1)
         time_list = np.multiply(time_grid, step)
+        x_ind = int(x * num_mesh_point / L) - 1
         xlist = mesh_points[1: mesh_points.shape[0] - 1]
         x_dom = [2.0, 4.0]    # domain of input function
 
-        mass_mat, stiff_mat, load_vec, init_vector, dPde = Fem1D().get_dPde_automaton(mesh_points.tolist(), x_dom, step)
+        dPde = Fem1D().get_dPde_automaton(mesh_points.tolist(), x_dom, step)
 
         alpha_range = (0.8, 1.1)
         beta_range = (0.9, 1.1)
@@ -57,13 +57,16 @@ if __name__ == '__main__':
 
         ax3 = pl3.plot_vlines(ax3, time_list.tolist(), e_lines_at_x_8_list, colors=colors[j], linestyles='solid')
 
-    ax3.legend([r'$space step = 1.0$', r'$space step = 0.5$', r'$space step = 0.2$'])
+    ax3.legend([r'$h = {}$'.format(L / num_mesh_points[0]),
+                r'$h = {}$'.format(format(L / num_mesh_points[1])),
+                r'$h = {}$'.format(format(L / num_mesh_points[2]))])
+
     ax3.set_ylim(0, 0.9)
     ax3.set_xlim(-0.2, 10.5)
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
     plt.xlabel('$t$', fontsize=20)
-    plt.ylabel(r'$\tilde{e}(x=8.0,t)$', fontsize=20)
+    plt.ylabel(r'$\tilde{}(x={},t)$'.format('e', x), fontsize=20)
     fig3.suptitle('Error Vs. Space-Step', fontsize=25)
     fig3.savefig('err_vs_spacestep.pdf')
     plt.show()

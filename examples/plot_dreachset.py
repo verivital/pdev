@@ -28,12 +28,7 @@ if __name__ == '__main__':
     xlist = mesh_points[1: mesh_points.shape[0] - 1]
     x_dom = [2.0, 4.0]    # domain of input function
 
-    mass_mat, stiff_mat, load_vec, init_vector, dPde = Fem1D().get_dPde_automaton(mesh_points.tolist(), x_dom, step)
-    print "\nmass matrix = \n{}".format(mass_mat.todense())
-    print "\nstiff matrix = \n{}".format(stiff_mat.todense())
-    print "\nload vector = \n{}".format(load_vec.todense())
-    print "\ninit vector = \n{}".format(init_vector.todense())
-    print "\ndPde matrix_a = {}".format(dPde.matrix_a.todense())
+    dPde = Fem1D().get_dPde_automaton(mesh_points.tolist(), x_dom, step)
 
     alpha_range = (0.8, 1.1)
     beta_range = (0.9, 1.1)
@@ -79,8 +74,8 @@ if __name__ == '__main__':
     plt.yticks(fontsize=20)
     plt.xlabel('$x$', fontsize=20)
     plt.ylabel(r'$\tilde{u}(x,t=10s)$ and $\tilde{e}(x,t=10s)$', fontsize=20)
-    fig1.suptitle('Discrete Reachable Sets', fontsize=25)
-    fig1.savefig('dreachset.pdf')
+    fig1.suptitle('Discrete Reachable Sets at $t=10s$', fontsize=25)
+    fig1.savefig('dreachset_t_10.pdf')
     plt.show()
 
     # plot dreach set of bloated set at final time step
@@ -96,8 +91,8 @@ if __name__ == '__main__':
     plt.yticks(fontsize=20)
     plt.xlabel('$x$', fontsize=20)
     plt.ylabel(r'$\bar{u}(x,t=10s)$', fontsize=20)
-    fig2.suptitle('Bloated Discrete Reachable Set', fontsize=25)
-    fig2.savefig('bloated_dreachset.pdf')
+    fig2.suptitle('Bloated Discrete Reachable Set at $t=10s$', fontsize=25)
+    fig2.savefig('bloated_dreachset_t_10.pdf')
     plt.show()
 
     # plot dreach set at x over time
@@ -115,7 +110,7 @@ if __name__ == '__main__':
     plt.xlabel('$t$', fontsize=20)
     plt.ylabel(r'$\tilde{u}(x=8.0,t)$ and $\tilde{e}(x=8.0,t)$', fontsize=20)
     fig3.suptitle('Discrete Reachable Sets at $x = 8.0$', fontsize=25)
-    fig3.savefig('x_dreachset.pdf')
+    fig3.savefig('dreachset_x_8.pdf')
     plt.show()
 
     # plot bloated dreach set at x over time
@@ -132,5 +127,5 @@ if __name__ == '__main__':
     plt.xlabel('$t$', fontsize=20)
     plt.ylabel(r'$\bar{u}(x=8.0,t)$', fontsize=20)
     fig4.suptitle('Bloated Discrete Reachable Set at $x = 8.0$', fontsize=25)
-    fig4.savefig('bloated_x_dreachset.pdf')
+    fig4.savefig('bloated_dreachset_x_8.pdf')
     plt.show()

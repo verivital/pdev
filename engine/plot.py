@@ -11,7 +11,6 @@ from mpl_toolkits.mplot3d.axes3d import Axes3D
 from engine.verifier import VerificationResult
 from engine.specification import SafetySpecification
 import numpy as np
-import matplotlib.pyplot as plt
 
 
 class Plot(object):
@@ -33,6 +32,7 @@ class Plot(object):
         xmax = []
         ymin = []
         ymax = []
+
         for i in xrange(0, n):
             xmin.append(rectangle_set_list[i].xmin)
             xmax.append(rectangle_set_list[i].xmax)

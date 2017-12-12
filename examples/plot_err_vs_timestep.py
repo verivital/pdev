@@ -38,7 +38,7 @@ if __name__ == '__main__':
         xlist = mesh_points[1: mesh_points.shape[0] - 1]
         x_dom = [2.0, 4.0]    # domain of input function
 
-        mass_mat, stiff_mat, load_vec, init_vector, dPde = Fem1D().get_dPde_automaton(mesh_points.tolist(), x_dom, step)
+        dPde = Fem1D().get_dPde_automaton(mesh_points.tolist(), x_dom, step)
 
         alpha_range = (0.8, 1.1)
         beta_range = (0.9, 1.1)
@@ -58,13 +58,13 @@ if __name__ == '__main__':
 
         ax3 = pl3.plot_vlines(ax3, time_list.tolist(), e_lines_at_x_8_list, colors=colors[j], linestyles='solid')
 
-    ax3.legend([r'$k = 0.2$', r'$k = 0.1$', r'$k = 0.05$'])
+    ax3.legend([r'$k = {}$'.format(steps[0]), r'$k = {}$'.format(steps[1]), r'$k = {}$'.format(steps[2])])
     ax3.set_ylim(0, 0.9)
     ax3.set_xlim(-0.2, 10.5)
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
     plt.xlabel('$t$', fontsize=20)
-    plt.ylabel(r'$\tilde{e}(x=8.0,t)$', fontsize=20)
+    plt.ylabel(r'$\tilde{}(x={},t)$'.format('e', x), fontsize=20)
     fig3.suptitle('Error Vs. Time-Step', fontsize=25)
     fig3.savefig('err_vs_timestep.pdf')
     plt.show()

@@ -28,12 +28,7 @@ if __name__ == '__main__':
     xlist = mesh_points[1: mesh_points.shape[0] - 1]
     x_dom = [2.0, 4.0]    # domain of input function
 
-    mass_mat, stiff_mat, load_vec, init_vector, dPde = Fem1D().get_dPde_automaton(mesh_points.tolist(), x_dom, step)
-    print "\nmass matrix = \n{}".format(mass_mat.todense())
-    print "\nstiff matrix = \n{}".format(stiff_mat.todense())
-    print "\nload vector = \n{}".format(load_vec.todense())
-    print "\ninit vector = \n{}".format(init_vector.todense())
-    print "\ndPde matrix_a = {}".format(dPde.matrix_a.todense())
+    dPde = Fem1D().get_dPde_automaton(mesh_points.tolist(), x_dom, step)
 
     alpha_range = (0.8, 1.1)
     beta_range = (0.9, 1.1)
@@ -48,11 +43,10 @@ if __name__ == '__main__':
     # Plot interpolation reachable set
 
     # plot interpolation in space set
-    bl_sp_boxes, _, _, _, _ = bl_inspace[toTimeStep].get_2D_boxes(alpha_range, beta_range)
-    print "\n len of bl_sp_boxes = {}".format(len(bl_sp_boxes))
+    bl_sp_boxes = bl_inspace[toTimeStep].get_2D_boxes(alpha_range, beta_range)
     bl_boxes_3d = []
     for i in xrange(0, len(bl_set)):
-        box3d, _, _, _, _ = bl_set[i].get_3D_boxes(alpha_range, beta_range)
+        box3d = bl_set[i].get_3D_boxes(alpha_range, beta_range)
         bl_boxes_3d.append(box3d)
 
     fig1 = plt.figure()
@@ -66,24 +60,24 @@ if __name__ == '__main__':
     plt.yticks(fontsize=20)
     plt.xlabel('$x$', fontsize=20)
     plt.ylabel(r'$\bar{u}(x,t=10s)$', fontsize=20)
-    fig1.suptitle('Continuous Bloated Reachable Sets', fontsize=25)
-    fig1.savefig('con_bloated_reachset.pdf')
+    fig1.suptitle('Continuous Reachable Set at $t=10s$', fontsize=25)
+    fig1.savefig('con_reachset_t_10.pdf')
     plt.show()
 
     # plot interpolation set in both space and time
     fig2 = plt.figure()
     ax2 = fig2.add_subplot(111, projection='3d')
     pl2 = Plot()
-    ax2 = pl2.plot_interpolationset(ax2, bl_boxes_3d, facecolor='c', linewidth=1, edgecolor='r')
+    ax2 = pl2.plot_interpolationset(ax2, bl_boxes_3d, facecolor='c', linewidth=0.5, edgecolor='r')
     ax2.set_xlim(0, 10.5)
     ax2.set_ylim(0, 10.5)
-    ax2.set_zlim(0, 2.0)
+    ax2.set_zlim(0, 1.0)
     ax2.tick_params(axis='z', labelsize=20)
     ax2.tick_params(axis='x', labelsize=20)
     ax2.tick_params(axis='y', labelsize=20)
     ax2.set_xlabel('$x$', fontsize=20)
     ax2.set_ylabel('$t$', fontsize=20)
     ax2.set_zlabel(r'$\bar{u}(x,t)$', fontsize=20)
-    fig2.suptitle('Bloated Reachable Sets in 3D', fontsize=25)
-    fig2.savefig('con_bloated_reachset_3D.pdf')
+    fig2.suptitle('3-Dimensional Reachable Set', fontsize=25)
+    fig2.savefig('reachset_3D.pdf')
     plt.show()

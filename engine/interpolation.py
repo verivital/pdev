@@ -116,7 +116,7 @@ class InterpolSetInSpace(object):
                 self.xlist[i], self.xlist[i + 1], min_vec[i], max_vec[i])
             boxes_2D_list.append(box_2D)
 
-        return boxes_2D_list, min_vec, min_points, max_vec, max_points
+        return boxes_2D_list
 
 
 class InterpolationSet(object):
@@ -274,7 +274,7 @@ class InterpolationSet(object):
                               max_vec[j])
             boxes_3D_list.append(box_3D)
 
-        return boxes_3D_list, min_vec, min_points, max_vec, max_points
+        return boxes_3D_list
 
     def get_trace_func(self, alpha_value, beta_value, x_value):
         'return a trace function for specific values of alpha and beta'
