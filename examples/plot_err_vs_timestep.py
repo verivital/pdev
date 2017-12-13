@@ -21,9 +21,9 @@ if __name__ == '__main__':
     mesh_grid = np.arange(0, num_mesh_points + 1, step=1)
     mesh_points = np.multiply(mesh_grid, L / num_mesh_points)
     print "\nmesh_points = {}".format(mesh_points)
-    x = 8.0
+    x = 5.0
     x_ind = int(x / 0.5) - 1
-    steps = [0.1, 0.05]    # time step of FEM
+    steps = [0.1, 0.005]    # time step of FEM
     colors = ['r', 'g']
 
     fig3 = plt.figure()
@@ -46,21 +46,23 @@ if __name__ == '__main__':
         dPde.set_perturbation(alpha_range, beta_range)
 
         ############################################################
-        # compute error dicrete reachable set
         RSA = ReachSetAssembler()
-        _, e_inspace, _, _, _, _ = RSA.get_interpolationset(dPde, toTimeStep)
-        e_boxes = e_inspace[toTimeStep].get_2D_boxes(alpha_range, beta_range)
-        ax3 = pl3.plot_boxes(ax3, e_boxes, facecolor=colors[j], edgecolor=colors[j])
+        _, e_dset, _ = RSA.get_dreachset(dPde, toTimeStep)    # compute discrete reachable set
+        e_lines_at_x_8_list = []
 
-    ax3.set_ylim(0.0, 0.4)
+        for i in xrange(0, toTimeStep + 1):
+            e_lines_at_x_8, _, _, _, _ = e_dset[i].get_lines_set()
+            e_lines_at_x_8_list.append(e_lines_at_x_8[x_ind])
+
+        ax3 = pl3.plot_vlines(ax3, time_list.tolist(), e_lines_at_x_8_list, colors=colors[j], linestyles='solid')
+
+    ax3.legend([r'$k = 0.1$', r'$k = 0.005$'])
+    ax3.set_ylim(0.0, 0.3)
     ax3.set_xlim(0, 10.5)
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
     plt.xlabel('$x$', fontsize=20)
-    plt.ylabel(r'$\bar{e}(x,t=10s)$', fontsize=20)
-    red_patch = mpatches.Patch(color='r', label='$k = 0.1$')
-    green_patch = mpatches.Patch(color='g', label='$k = 0.05$')
-    plt.legend(handles=[red_patch, green_patch])
-    fig3.suptitle('Error Vs. Space-Step at $t=10s$', fontsize=25)
+    plt.ylabel(r'$\bar{e}(x=5,t)$', fontsize=20)
+    fig3.suptitle('Error Vs. Time-Step at $x=5$', fontsize=25)
     fig3.savefig('err_vs_time_step.pdf')
     plt.show()
