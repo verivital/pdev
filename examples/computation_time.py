@@ -42,7 +42,7 @@ def computationtime_vs_nummeshpoint():
     ##################################################
     # generate dPde automaton
     L = 10.0    # length of rod
-    num_mesh_points = [10, 20]     # number of mesh points
+    num_mesh_points = [10, 20, 40, 50, 80, 100]     # number of mesh points
     step = 0.1
     x_dom = [2.0, 4.0]    # domain of input function
     alpha_range = (0.8, 1.1)
@@ -86,7 +86,7 @@ def computationtime_vs_numtimesteps():
     mesh_grid = np.arange(0, num_mesh_points + 1, step=1)
     mesh_points = np.multiply(mesh_grid, L / num_mesh_points)
     print "\nmesh_points = {}".format(mesh_points)
-    steps = [0.1, 0.05, 0.01]    # time step of FEM
+    steps = [0.2, 0.1, 0.05, 0.01, 0.005, 0.001]    # time step of FEM
     x_dom = [2.0, 4.0]    # domain of input function
     alpha_range = (0.8, 1.1)
     beta_range = (0.9, 1.1)
@@ -96,7 +96,7 @@ def computationtime_vs_numtimesteps():
     for j in xrange(0, len(steps)):
         start = time.time()
         step = steps[j]
-        toTimeStep = int(10.0 / step)    # number of time steps
+        toTimeStep = int(0.2 / step)    # number of time steps
         number_time_steps.append(toTimeStep)
         time_grid = np.arange(0, toTimeStep + 1, step=1)
         time_list = np.multiply(time_grid, step)
@@ -110,7 +110,9 @@ def computationtime_vs_numtimesteps():
         end = time.time()
         computation_time.append(end - start)
 
-    store_data(number_time_steps, computation_time, ['number of time steps', 'computation time'], 'compuationtime_vs_numtimestpes.dat')
+        print "\ncomputation time for number of time steps = {} is {}".format(toTimeStep, computation_time[j])
+
+    store_data(number_time_steps, computation_time, ['number of time steps', 'computation time'], 'computationtime_vs_numtimestpes.dat')
 
 if __name__ == '__main__':
 
