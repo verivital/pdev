@@ -23,8 +23,8 @@ if __name__ == '__main__':
     print "\nmesh_points = {}".format(mesh_points)
     x = 5.0
     x_ind = int(x / 0.5) - 1
-    steps = [0.1, 0.005]    # time step of FEM
-    colors = ['r', 'g']
+    steps = [0.01, 0.1]    # time step of FEM
+    colors = ['g', 'r']
 
     fig3 = plt.figure()
     ax3 = fig3.add_subplot(111)
@@ -56,12 +56,12 @@ if __name__ == '__main__':
 
         ax3 = pl3.plot_vlines(ax3, time_list.tolist(), e_lines_at_x_8_list, colors=colors[j], linestyles='solid')
 
-    ax3.legend([r'$k = 0.1$', r'$k = 0.005$'])
+    ax3.legend([r'$k = 0.01$', r'$k = 0.1$'])
     ax3.set_ylim(0.0, 0.3)
     ax3.set_xlim(0, 10.5)
     plt.xticks(fontsize=20)
     plt.yticks(fontsize=20)
-    plt.xlabel('$x$', fontsize=20)
+    plt.xlabel('$t$', fontsize=20)
     plt.ylabel(r'$\bar{e}(x=5,t)$', fontsize=20)
     fig3.suptitle('Error Vs. Time-Step at $x=5$', fontsize=25)
     fig3.savefig('err_vs_time_step.pdf')

@@ -55,7 +55,7 @@ def computationtime_vs_nummeshpoint():
         mesh_grid = np.arange(0, num_mesh_point + 1, step=1)
         mesh_points = np.multiply(mesh_grid, L / num_mesh_point)
         print "\nmesh_points = {}".format(mesh_points)
-        toTimeStep = 2    # number of time steps
+        toTimeStep = 1 # number of time steps
         time_grid = np.arange(0, toTimeStep + 1, step=1)
         time_list = np.multiply(time_grid, step)
         xlist = mesh_points[1: mesh_points.shape[0] - 1]
@@ -96,7 +96,7 @@ def computationtime_vs_numtimesteps():
     for j in xrange(0, len(steps)):
         start = time.time()
         step = steps[j]
-        toTimeStep = int(0.2 / step)    # number of time steps
+        toTimeStep = int(10.0 / step)    # number of time steps
         number_time_steps.append(toTimeStep)
         time_grid = np.arange(0, toTimeStep + 1, step=1)
         time_list = np.multiply(time_grid, step)
