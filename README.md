@@ -28,4 +28,4 @@ Reproduce experimental results:
     5) Computation time complexity analysis: command: python computation_time.py
 
 
-All figures in the paper and .dat files containing data for the tables shoule be reproduced in example folder.
+All figures in the paper and .dat files containing data for the tables should be reproduced in the example folder.
