@@ -15,7 +15,7 @@ Tested on Ubuntu 16.0.4
 
 Reproduce experimental results:
 
-    Go to Example folder, the experimental results concludes:
+    Go to Example folder, the experimental result concludes:
 
     1) Discrete reachable set computation and figures : command: python plot_dreachset.py
 
