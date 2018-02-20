@@ -16,12 +16,12 @@ if __name__ == '__main__':
     # generate dPde automaton
     FEM = Fem1D()
     L = 10.0    # length of rod
-    num_mesh_points = 20    # number of mesh points
+    num_mesh_points = 100    # number of mesh points
     mesh_grid = np.arange(0, num_mesh_points + 1, step=1)
     mesh_points = np.multiply(mesh_grid, L / num_mesh_points)
     print "\nmesh_points = {}".format(mesh_points)
-    step = 0.1    # time step of FEM
-    toTimeStep = 100    # number of time steps
+    step = 0.01    # time step of FEM
+    toTimeStep = 1000    # number of time steps
     time_grid = np.arange(0, toTimeStep + 1, step=1)
     time_list = np.multiply(time_grid, step)
     print "\ntime_list = {}".format(time_list)
@@ -40,7 +40,7 @@ if __name__ == '__main__':
     u_dset, e_dset, bloated_dset = RSA.get_dreachset(dPde, toTimeStep)    # compute discrete reachable set
 
     x = 8.0
-    x_ind = int(x / 0.5) - 1
+    x_ind = int(x / 0.1) - 1
     u_lines_at_x_8_list = []
     e_lines_at_x_8_list = []
     bl_lines_at_x_8_list = []
