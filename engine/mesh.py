@@ -28,6 +28,9 @@ class Triangulation_2D(object):
         self.bd_edges_mat = None    # boundary edges matrix
         self.num_bd_edges = None    # number of boundary edges
 
+        self.t2v_mat = None    # triangles to vertices matrix
+        self.ed2v_mat = None    # edges to vertices matrix
+
     def get_edges_mat(self):
         'compute edges and boundary edges matrix'
 
@@ -36,16 +39,12 @@ class Triangulation_2D(object):
         edge3 = self.elements_mat[:, [0, 1]]
 
         edges = np.vstack([edge1, edge2, edge3])
-
-        print "\nedge = \n{}".format(edges)
         edges.sort(axis=1, kind='mergesort')   # row sort
 
-        print "\nsorted_edges = \n{}".format(edges)
         row = edges[:, 0].reshape(edges.shape[0],)
         col = edges[:, 1].reshape(edges.shape[0],)
         data = np.ones((edges.shape[0],), dtype=int)
         s_mat = csc_matrix((data, (row, col)))
-        print "\ntotal edges matrix = \n{}".format(s_mat)
 
         I, J, V = find(s_mat)
         self.edges_mat = np.transpose(np.array([I[:], J[:]]))
@@ -67,6 +66,51 @@ class Triangulation_2D(object):
         print "\nnumber of boundary edges is : {}".format(self.num_bd_edges)
         print "\nnumber of interior edges is : {}".format(self.num_edges - self.num_bd_edges)
 
+    def get_t2v_mat(self):
+        'construct the incidence matrix between triangles and vertices'
+
+        n = self.num_nodes
+        nt = self.num_elements
+
+        el1 = self.elements_mat[:, 0]
+        el2 = self.elements_mat[:, 1]
+        el3 = self.elements_mat[:, 2]
+
+        col = np.hstack((el1, el2, el3))
+        row = np.hstack((range(nt), range(nt), range(nt)))
+        data = np.ones((col.shape[0],), dtype=int)
+
+        self.t2v_mat = csc_matrix((data, (row, col)), shape=(nt, n))
+        print "\ntriangles to vertices matrix = \n{}".format(self.t2v_mat.toarray())
+
+    def get_ed2v_mat(self):
+        'construct the incidence matrix between edges and vertices'
+
+        if self.edges_mat is None:
+            self.get_edges_mat()
+        else:
+            ne = self.num_edges
+            n = self.num_nodes
+            row = np.hstack((range(ne), range(ne)))
+            col = np.hstack((self.edges_mat[:, 0], self.edges_mat[:, 1]))
+            data = np.ones((col.shape[0],), dtype=int)
+            self.ed2v_mat = csc_matrix((data, (row, col)), shape=(ne, n))
+            print "\nedges to vertices matrix = \n{}".format(self.ed2v_mat.toarray())
+
+    def get_el2ed(self):
+        'construct the incidence matrix between elements and edges'
+
+        edge1 = self.elements_mat[:, [1, 2]]
+        edge2 = self.elements_mat[:, [2, 0]]
+        edge3 = self.elements_mat[:, [0, 1]]
+
+        edges = np.vstack([edge1, edge2, edge3])
+        edges.sort(axis=1, kind='mergesort')   # row sort
+        E, I, J = np.unique(edges, axis=0, return_index=True, return_inverse=True)
+        nt = self.num_elements
+        self.el2ed_mat = np.transpose(J.reshape(3, nt))
+        print "\nelements to edges matrix = \n{}".format(self.el2ed_mat)
+
 
 def test():
     'test mesh.py'
@@ -82,7 +126,9 @@ def test():
     print "\nelements matrix of the mess is : \n{}".format(mesh.elements_mat)
 
     mesh.get_edges_mat()
-
+    mesh.get_t2v_mat()
+    mesh.get_ed2v_mat()
+    mesh.get_el2ed()
 
 if __name__ == '__main__':
 
