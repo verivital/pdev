@@ -23,6 +23,7 @@ class Triangulation_2D(object):
         self.num_nodes = nodes_mat.shape[0]    # number of nodes
         self.num_elements = elements_mat.shape[0]    # number of elements
 
+        # auxiliary data of the 2-D triangulation
         self.edges_mat = None    # edges matrix
         self.num_edges = None    # number of edges
         self.bd_edges_mat = None    # boundary edges matrix
@@ -30,6 +31,8 @@ class Triangulation_2D(object):
 
         self.t2v_mat = None    # triangles to vertices matrix
         self.ed2v_mat = None    # edges to vertices matrix
+        self.el2led_mat = None    # elements to edges matrix
+        self.neighbor_mat = None    # neighbor matrix
 
     def get_edges_mat(self):
         'compute edges and boundary edges matrix'
@@ -97,7 +100,7 @@ class Triangulation_2D(object):
             self.ed2v_mat = csc_matrix((data, (row, col)), shape=(ne, n))
             print "\nedges to vertices matrix = \n{}".format(self.ed2v_mat.toarray())
 
-    def get_el2ed(self):
+    def get_el2ed_mat(self):
         'construct the incidence matrix between elements and edges'
 
         edge1 = self.elements_mat[:, [1, 2]]
@@ -110,6 +113,16 @@ class Triangulation_2D(object):
         nt = self.num_elements
         self.el2ed_mat = np.transpose(J.reshape(3, nt))
         print "\nelements to edges matrix = \n{}".format(self.el2ed_mat)
+
+    def get_ed2el_mat(self):
+        'construct edges to elements matrix'
+
+        pass
+
+    def get_neighbor_mat(self):
+        'construct neighbor matrix to record neighboring triangles for each triangle'
+
+        pass
 
 
 def test():
@@ -128,7 +141,7 @@ def test():
     mesh.get_edges_mat()
     mesh.get_t2v_mat()
     mesh.get_ed2v_mat()
-    mesh.get_el2ed()
+    mesh.get_el2ed_mat()
 
 if __name__ == '__main__':
 
