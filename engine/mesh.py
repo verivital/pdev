@@ -117,7 +117,49 @@ class Triangulation_2D(object):
     def get_ed2el_mat(self):
         'construct edges to elements matrix'
 
-        pass
+        if self.el2ed_mat is None:
+            self.get_el2ed_mat()
+        else:
+            nt = self.num_elements
+            e0 = self.el2ed_mat[:, 0]
+            e1 = self.el2ed_mat[:, 1]
+            e2 = self.el2ed_mat[:, 2]
+            e = np.array([np.hstack((e0, e1, e2))])
+            el = np.array([np.hstack((range(nt), range(nt), range(nt)))])
+            v  = np.array([np.hstack((np.zeros((nt,), dtype=int), np.ones((nt,), dtype=int), 2 * np.ones((nt,), dtype=int)))])
+            ed2el = np.hstack((np.transpose(e), np.transpose(el), np.transpose(v)))
+            ind = np.argsort(ed2el[:, 0])
+            ed2el = ed2el[ind]
+            ne = ed2el.shape[0]
+            t1 = []
+            k1 = []
+            t2 = []
+            k2 = []
+            for i in xrange(0, ne - 1):
+                if ed2el[i, 0] != ed2el[i + 1, 0]:
+
+                    if i < ne - 2:
+                        t1.append(ed2el[i, 1])
+                        k1.append(ed2el[i, 2])
+                        t2.append(ed2el[i, 1])
+                        k2.append(ed2el[i, 2])
+                    else:
+                        t1.append(ed2el[i + 1, 1])
+                        k1.append(ed2el[i + 1, 2])
+                        t2.append(ed2el[i + 1, 1])
+                        k2.append(ed2el[i + 1, 2])
+                else:
+                    t1.append(ed2el[i, 1])
+                    k1.append(ed2el[i, 2])
+                    t2.append(ed2el[i + 1, 1])
+                    k2.append(ed2el[i + 1, 2])
+
+            t1 = np.transpose(np.array([t1]))
+            t2 = np.transpose(np.array([t2]))
+            k1 = np.transpose(np.array([k1]))
+            k2 = np.transpose(np.array([k2]))
+            self.ed2el_mat = np.hstack((t1, t2, k1, k2))
+            print "\nedges to elements matrix = \n{}".format(self.ed2el_mat)
 
     def get_neighbor_mat(self):
         'construct neighbor matrix to record neighboring triangles for each triangle'
@@ -142,6 +184,7 @@ def test():
     mesh.get_t2v_mat()
     mesh.get_ed2v_mat()
     mesh.get_el2ed_mat()
+    mesh.get_ed2el_mat()
 
 if __name__ == '__main__':
 
