@@ -130,36 +130,36 @@ class Triangulation_2D(object):
             ed2el = np.hstack((np.transpose(e), np.transpose(el), np.transpose(v)))
             ind = np.argsort(ed2el[:, 0])
             ed2el = ed2el[ind]
-            ne = ed2el.shape[0]
-            t1 = []
-            k1 = []
-            t2 = []
-            k2 = []
-            for i in xrange(0, ne - 1):
-                if ed2el[i, 0] != ed2el[i + 1, 0]:
+            E, C = np.unique(ed2el[:, 0], axis=0, return_counts=True)
 
-                    if i < ne - 2:
-                        t1.append(ed2el[i, 1])
-                        k1.append(ed2el[i, 2])
-                        t2.append(ed2el[i, 1])
-                        k2.append(ed2el[i, 2])
-                    else:
-                        t1.append(ed2el[i + 1, 1])
-                        k1.append(ed2el[i + 1, 2])
-                        t2.append(ed2el[i + 1, 1])
-                        k2.append(ed2el[i + 1, 2])
+            ne = self.num_edges
+            t1 = np.zeros((ne,), dtype=int)
+            t2 = np.zeros((ne,), dtype=int)
+            k1 = np.zeros((ne,), dtype=int)
+            k2 = np.zeros((ne,), dtype=int)
+            j = 0
+            for i in xrange(0, ne):
+                if C[i] == 1:
+                    t1[i] = ed2el[j, 1]
+                    k1[i] = ed2el[j, 2]
+                    t2[i] = t1[i]
+                    k2[i] = k1[i]
+                    j = j + 1
                 else:
-                    t1.append(ed2el[i, 1])
-                    k1.append(ed2el[i, 2])
-                    t2.append(ed2el[i + 1, 1])
-                    k2.append(ed2el[i + 1, 2])
+
+                    t1[i] = ed2el[j, 1]
+                    k1[i] = ed2el[j, 2]
+                    t2[i] = ed2el[j + 1, 1]
+                    k2[i] = ed2el[j + 1, 2]
+                    j = j + 2
 
             t1 = np.transpose(np.array([t1]))
             t2 = np.transpose(np.array([t2]))
             k1 = np.transpose(np.array([k1]))
             k2 = np.transpose(np.array([k2]))
+
             self.ed2el_mat = np.hstack((t1, t2, k1, k2))
-            print "\nedges to elements matrix = \n{}".format(self.ed2el_mat)
+            print "\nedges to elements matrix: \n{}".format(self.ed2el_mat)
 
     def get_neighbor_mat(self):
         'construct neighbor matrix to record neighboring triangles for each triangle'
