@@ -31,7 +31,7 @@ class Triangulation_2D(object):
 
         self.t2v_mat = None    # triangles to vertices matrix
         self.ed2v_mat = None    # edges to vertices matrix
-        self.el2led_mat = None    # elements to edges matrix
+        self.el2led_mat = None    # elements(triangles) to edges matrix
         self.neighbor_mat = None    # neighbor matrix
 
     def get_edges_mat(self):
@@ -164,7 +164,29 @@ class Triangulation_2D(object):
     def get_neighbor_mat(self):
         'construct neighbor matrix to record neighboring triangles for each triangle'
 
-        pass
+        if self.ed2el_mat is None:
+            self.get_ed2el_mat()
+
+        ed2el = self.ed2el_mat
+        el2ed = self.el2ed_mat
+        nt = self.num_elements
+        neighbor = np.zeros((nt, 3), dtype=int)
+        for i in xrange(0, nt):
+            for j in xrange(0, 3):
+                ed = el2ed[i, j]
+                e1 = ed2el[ed, 0]
+                e2 = ed2el[ed, 1]
+                if e1 != e2:
+                    if e1 != i:
+                        neighbor[i, j] = e1
+                    elif e2 != i:
+                        neighbor[i, j] = e2
+
+                else:
+                    neighbor[i, j] = e1
+
+        self.neighbor_mat = neighbor
+        print "\nneighbor = {}".format(neighbor)
 
 
 def test():
@@ -185,6 +207,7 @@ def test():
     mesh.get_ed2v_mat()
     mesh.get_el2ed_mat()
     mesh.get_ed2el_mat()
+    mesh.get_neighbor_mat()
 
 if __name__ == '__main__':
 
