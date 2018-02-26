@@ -10,6 +10,8 @@ Main references:
 from scipy.sparse import lil_matrix, linalg
 from engine.pde_automaton import DPdeAutomaton
 from engine.functions import Functions
+from engine.mesh import Triangulation_2D
+import numpy as np
 
 
 class Fem1D(object):
@@ -171,7 +173,37 @@ class Fem1D(object):
 
         return dPde
 
-if __name__ == '__main__':
+
+class Fem2D(object):
+    'contains functions of finite element method for 2-dimensional PDEs'
+
+    @staticmethod
+    def stiff_assembler(mesh):
+        'compute stiff matrix for 2-dimentional triangulation'
+        # M = \Sigma_{i = 1 to nt} [\integral_{Ki} (phi_i, phi_j)dxdy]
+        # reference: The Finite ElementMethod: Theory, Implementation, and Applications, G.Larson
+
+        assert isinstance(mesh, Triangulation_2D), 'error: mesh is not a 2-dimensional triangulation'
+
+        nt = mesh.num_elements
+        n = mesh.num_nodes
+        stiff_mat = lil_matrix((n, n), dtype=float)
+
+        for i in xrange(0, nt):
+            loc2glob = mesh.elements_mat[i, :]    # mapping the local index 0, 1, 2 to global index of nodes in the i-th element(triangle)
+            area = mesh.get_area(i)
+            Mi = area * (1.0 / 12) * np.array([[2, 1, 1], [1, 2, 1], [1, 1, 2]])    # i-th element stiff matrix
+
+            for j in xrange(0, 3):
+                for k in xrange(0, 3):
+                    stiff_mat[loc2glob[j], loc2glob[k]] = stiff_mat[loc2glob[j], loc2glob[k]] + Mi[j, k]
+
+        return stiff_mat
+
+
+def test_Fem1D():
+    'test fem1d class'
+
     xlist = [0.0, 0.5, 1.0, 1.5, 2.0]
     Fem = Fem1D()
     M = Fem.mass_assembler(xlist)
@@ -186,3 +218,18 @@ if __name__ == '__main__':
 
     init_vec = Fem.get_init_cond(xlist)
     print "\ninit vector :\n{}".format(init_vec.todense())
+
+
+def test_Fem2D():
+    'test fem2d class'
+
+    nodes = np.array([[0, 0], [1, 0], [2, 0], [2, 1], [0, 1]])
+    elements = np.array([[0, 3, 4], [0, 1, 3], [1, 2, 3]])
+    mesh = Triangulation_2D(nodes, elements)
+    stiff_mat = Fem2D().stiff_assembler(mesh)
+    print "\nstiff matrix : \n{}".format(stiff_mat.toarray())
+
+
+if __name__ == '__main__':
+    # test_Fem1D()
+    test_Fem2D()

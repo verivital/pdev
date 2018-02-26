@@ -15,8 +15,10 @@ class Triangulation_2D(object):
 
     def __init__(self, nodes_mat, elements_mat):
 
-        assert isinstance(nodes_mat, np.ndarray) and nodes_mat.shape[1] == 2, 'error: invalid nodes matrix for 2D-triangulation'
-        assert isinstance(elements_mat, np.ndarray) and elements_mat.shape[1] == 3, 'error: invalid elements matrix for 2D-triangulation'
+        assert isinstance(
+            nodes_mat, np.ndarray) and nodes_mat.shape[1] == 2, 'error: invalid nodes matrix for 2D-triangulation'
+        assert isinstance(
+            elements_mat, np.ndarray) and elements_mat.shape[1] == 3, 'error: invalid elements matrix for 2D-triangulation'
 
         self.nodes_mat = nodes_mat    # nodes matrix
         self.elements_mat = elements_mat    # elements matrix
@@ -109,7 +111,8 @@ class Triangulation_2D(object):
 
         edges = np.vstack([edge1, edge2, edge3])
         edges.sort(axis=1, kind='mergesort')   # row sort
-        E, I, J = np.unique(edges, axis=0, return_index=True, return_inverse=True)
+        E, I, J = np.unique(
+            edges, axis=0, return_index=True, return_inverse=True)
         nt = self.num_elements
         self.el2ed_mat = np.transpose(J.reshape(3, nt))
         print "\nelements to edges matrix = \n{}".format(self.el2ed_mat)
@@ -126,8 +129,10 @@ class Triangulation_2D(object):
             e2 = self.el2ed_mat[:, 2]
             e = np.array([np.hstack((e0, e1, e2))])
             el = np.array([np.hstack((range(nt), range(nt), range(nt)))])
-            v  = np.array([np.hstack((np.zeros((nt,), dtype=int), np.ones((nt,), dtype=int), 2 * np.ones((nt,), dtype=int)))])
-            ed2el = np.hstack((np.transpose(e), np.transpose(el), np.transpose(v)))
+            v = np.array([np.hstack((np.zeros((nt,), dtype=int), np.ones(
+                (nt,), dtype=int), 2 * np.ones((nt,), dtype=int)))])
+            ed2el = np.hstack(
+                (np.transpose(e), np.transpose(el), np.transpose(v)))
             ind = np.argsort(ed2el[:, 0])
             ed2el = ed2el[ind]
             E, C = np.unique(ed2el[:, 0], axis=0, return_counts=True)
@@ -188,12 +193,35 @@ class Triangulation_2D(object):
         self.neighbor_mat = neighbor
         print "\nneighbor = {}".format(neighbor)
 
+    def get_area(self, el_index):
+        'compute the area of the ith-triangle'
+
+        assert isinstance(
+            el_index, int) and 0 <= el_index <= self.num_elements - 1, 'error: invalid element index'
+
+        element = self.elements_mat[el_index, :]
+        node1_ind = element[0]
+        node2_ind = element[1]
+        node3_ind = element[2]
+
+        node1 = self.nodes_mat[node1_ind, :]
+        node2 = self.nodes_mat[node2_ind, :]
+        node3 = self.nodes_mat[node3_ind, :]
+
+        # area = x1y2 + x2y3 + x3y1 - x1y3 - x2y1 - x3y2
+        area = 0.5 * (node1[0] * node2[1] + node2[0] * node3[1] + node3[0] * node1[1] -
+                      node1[0] * node3[1] - node2[0] * node1[1] - node3[0] * node2[1])
+
+        return area
+
 
 def test():
     'test mesh.py'
 
-    nodes = np.array([[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [0, 0]])
-    elements = np.array([[0, 1, 7], [2, 7, 1], [7, 2, 4], [3, 4, 2], [6, 7, 5], [4, 5, 7]])
+    nodes = np.array([[1, 0], [1, 1], [0, 1], [-1, 1],
+                      [-1, 0], [-1, -1], [0, -1], [0, 0]])
+    elements = np.array([[0, 1, 7], [2, 7, 1], [7, 2, 4],
+                         [3, 4, 2], [6, 7, 5], [4, 5, 7]])
 
     mesh = Triangulation_2D(nodes, elements)
 
@@ -208,6 +236,8 @@ def test():
     mesh.get_el2ed_mat()
     mesh.get_ed2el_mat()
     mesh.get_neighbor_mat()
+    mesh.get_area(0)
+
 
 if __name__ == '__main__':
 
