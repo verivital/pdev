@@ -36,6 +36,8 @@ class Triangulation_2D(object):
         self.el2led_mat = None    # elements(triangles) to edges matrix
         self.neighbor_mat = None    # neighbor matrix
 
+        self.shape_func_mat_list = []    # contain list of shape function matrices
+
     def get_edges_mat(self):
         'compute edges and boundary edges matrix'
 
@@ -213,6 +215,51 @@ class Triangulation_2D(object):
                       node1[0] * node3[1] - node2[0] * node1[1] - node3[0] * node2[1])
 
         return area
+
+    def get_shape_functions_mat(self):
+        'compute shape functions phi(x,y) matrix'
+
+        # Reference: The finite element method in engineering, Singiresu S. Rao, page 107
+        # T(x,y) = phi1(x,y) * T1 + phi2(x,y) T2 + phi3(x,y) * T3
+        # phi1(x, y) = a1 + b1 * x + c1 * y, phi1(node1) = 1, phi1(node2) = phi1(node3) = 0
+        # phi2(x, y) = a2 + b2 * x + c2 * y, phi2(node2) = 1, phi2(node1) = phi2(node3) = 0
+        # phi3(x, y) = a3 + b3 * x + c3 * y, phi3(node3) = 1, phi3(node1) = phi3(node2) = 0
+
+        # shape_funs_mat = [a1 b1 c1; a2 b2 c2; a3 b3 c3]
+
+        nt = self.num_elements
+        for i in xrange(0, nt):
+
+            element = self.elements_mat[i, :]
+            node1_ind = element[0]
+            node2_ind = element[1]
+            node3_ind = element[2]
+
+            node1 = self.nodes_mat[node1_ind, :]
+            node2 = self.nodes_mat[node2_ind, :]
+            node3 = self.nodes_mat[node3_ind, :]
+
+            # area = x1y2 + x2y3 + x3y1 - x1y3 - x2y1 - x3y2
+            area = 0.5 * (node1[0] * node2[1] + node2[0] * node3[1] + node3[0] * node1[1] -
+                          node1[0] * node3[1] - node2[0] * node1[1] - node3[0] * node2[1])
+
+            # a1 = x2*y3 - x3*y2, a2 = x3*y1 - x1*y3, a3 = x1*y2 - x2*y1
+            a1 = node2[0] * node3[1] - node3[0] * node2[1]
+            a2 = node3[0] * node1[1] - node1[0] * node3[1]
+            a3 = node1[0] * node2[1] - node2[0] * node1[1]
+
+            # b1 = y2 - y3, b2 = y3 - y1, b3 = y1 - y2
+            b1 = node2[1] - node3[1]
+            b2 = node3[1] - node1[1]
+            b3 = node1[1] - node2[1]
+
+            # c1 = x3 - x2, c2 = x1 - x3, c3 = x2 - x1
+            c1 = node3[0] - node2[0]
+            c2 = node1[0] - node3[0]
+            c3 = node2[0] - node1[0]
+
+            shape_func_mat = (1.0 / 2 * area) * np.array([[a1, b1, c1], [a2, b2, c2], [a3, b3, c3]])
+            self.shape_func_mat_list.append(shape_func_mat)
 
 
 def test():
