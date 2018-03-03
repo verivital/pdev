@@ -121,14 +121,15 @@ class Fem1D(object):
         assert time_step > 0, 'invalid time_step'
         assert isinstance(current_step, int)
 
-        n = len(x) - 2    # number of discretized variables
+        n = len(x) - 2    # number of discretized variables, remove head and tail, in this case is 0 and 1
 
-        b = lil_matrix((n, 1), dtype=float)
-
+        #b = lil_matrix((n, 1), dtype=float)
+        b = lil_matrix((2*n, 1), dtype=float)
+	
         for i in xrange(0, n):
             seg_x = [x[i], x[i + 1], x[i + 2]]
-            if current_step >= 1:
-                b[i, 0] = Functions.integrate_input_func_mul_phi(
+            if current_step >= 1:# when current == 0 ???, b = 0
+                b[n + i, 0] = Functions.integrate_input_func_mul_phi(
                     seg_x, x_dom, [float(current_step - 1) * time_step, time_step * current_step])
 
         return b.tocsc()
