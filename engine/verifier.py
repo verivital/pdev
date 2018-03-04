@@ -9,6 +9,7 @@ from engine.pde_automaton import DPdeAutomaton
 from engine.set import DReachSet
 from engine.interpolation import Interpolation
 from engine.fem import Fem1D
+from engine.femwave import Fem1Dw
 from engine.functions import Functions
 from engine.specification import SafetySpecification
 import math
@@ -409,3 +410,34 @@ class Verifier(object):
             self.result.status = 'Safe'
 
         return self.result
+
+if __name__ == '__main__':
+	FEM = Fem1Dw()
+	mesh_points = [0.0, 0.5, 1.0, 1.5, 2.0]    # generate mesh points
+	step = 0.1    # time step of FEM
+	x_dom = [0.5, 1.0]    # domain of input function
+
+	dPde = Fem1Dw().get_dPde_automaton(mesh_points, x_dom, step)##wave FEM		
+	dPde.set_perturbation((0.99,1.01),(0.99,1.01))
+		
+	toTimeStep = 10
+	assert isinstance(dPde, DPdeAutomaton)
+       	assert isinstance(toTimeStep, int) and toTimeStep >= 0
+		
+	u_dreachset_list = []
+	dPde.set_perturbation
+	for cur_time in xrange(0, toTimeStep + 1):
+            u_dreachset = DReachSet()
+            if cur_time == 0:
+                u_Vn = dPde.init_vector
+                u_ln = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)##init_vector is 2n
+                u_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, u_Vn, u_ln)
+
+            else:
+                cur_b_vec_1 = Fem1Dw.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time)	###change here to 2n
+                cur_b_vec_2 = Fem1Dw.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time - 1)	###change here to 2n
+		cur_b_vec = (cur_b_vec_1 + cur_b_vec_2)/2
+                u_dreachset = ReachSetAssembler.get_cur_u_dreachset(dPde.matrix_a, u_dreachset_list[cur_time - 1], cur_b_vec)																	
+																		
+	    u_dreachset_list.append(u_dreachset)
+	    print "\n u_dreachset:\n{}".format(u_dreachset.Vn + u_dreachset.ln)     
