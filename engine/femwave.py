@@ -1,6 +1,7 @@
 '''
 This module implements Finite Element Method
 Dung Tran Nov/2017
+Tianshu Bao Mar/2018
 
 Main references:
     1) An introduction to the Finite Element Method for Differential Equations, M.Asadzaded, 2010
@@ -15,7 +16,7 @@ import numpy as np
 from scipy import sparse
 from sympy.abc import y
 
-class Fem1D(object):
+class Fem1Dw(object):
     'contains functions of finite element method for 1D PDEs'
 
     @staticmethod
@@ -91,7 +92,7 @@ class Fem1D(object):
         return stiff_matrix.tocsc()
 
     @staticmethod
-    def load_assembler(x, x_dom, time_step, current_step):
+    def load_assembler(x, x_dom, time_step, current_step):##we update b to 2n here
         'compute load vector for 1D problem'
 
         # x is list of discretized mesh points for example x = [0 , 0.1, 0.2, .., 0.9, 1]
@@ -165,10 +166,10 @@ class Fem1D(object):
     def get_dPde_automaton(x, x_dom, time_step):
         'initialize discreted Pde automaton'
 
-        mass_mat = Fem1D.mass_assembler(x)
-        stiff_mat = Fem1D.stiff_assembler(x)
-        load_vec = Fem1D.load_assembler(x, x_dom, time_step, 0)
-        init_vector = Fem1D.get_init_cond(x)
+        mass_mat = Fem1Dw.mass_assembler(x)
+        stiff_mat = Fem1Dw.stiff_assembler(x)
+        load_vec = Fem1Dw.load_assembler(x, x_dom, time_step, 0)
+        init_vector = Fem1Dw.get_init_cond(x)
 
         #inv_b_matrix = linalg.inv(mass_mat + stiff_mat.multiply(time_step / 2))
 	'matrix before Un'
@@ -202,10 +203,10 @@ class Fem1D(object):
 	
 	#print n
 
-	temp_loadvec = np.concatenate((np.zeros((n,1)), load_vec.todense()), axis=0)
+	#temp_loadvec = np.concatenate((np.zeros((n,1)), load_vec.todense()), axis=0)
 	#print "\n resulting loadvec for wave eq:\n{}".format(temp_loadvec)
-	temp_loadvec = sparse.csc_matrix(temp_loadvec)
-	vector_b = inv_b_matrix * temp_loadvec
+	#temp_loadvec = sparse.csc_matrix(temp_loadvec)
+	vector_b = inv_b_matrix * load_vec
 	print "\n vector_b:\n{}".format(vector_b.todense())
  
         #matrix_a = inv_b_matrix * (mass_mat - stiff_mat.multiply(time_step / 2))
