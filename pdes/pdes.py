@@ -1,4 +1,8 @@
-"""This module contains methods for producing ODEs from PDEs"""
+'''
+This module generates some discrete-space model of some PDE benchmark
+Dung Tran: 4/26/2018 Update:
+'''
+
 from __future__ import division
 
 import time
@@ -15,12 +19,15 @@ class HeatOneDimension(object):
     # equations for scientists and engineers"
     # S. J. Farlow, Courier Corporation, 1993, Page 39,
 
-    def __init__(self, diffusity_const, thermal_cond, heat_exchange_coeff, len_x):
+    def __init__(self, diffusity_const, thermal_cond,
+                 heat_exchange_coeff, len_x):
 
         self.diffusity_const = diffusity_const if diffusity_const > 0 else 0  # diffusity constant
         self.len_x = len_x if len_x > 0 else 0    # length along x-axis
-        self.thermal_cond = thermal_cond if thermal_cond > 0 else 0  # thermal conductivity constant
-        self.heat_exchange_coeff = heat_exchange_coeff if heat_exchange_coeff > 0 else 0  # heat exchange constant
+        # thermal conductivity constant
+        self.thermal_cond = thermal_cond if thermal_cond > 0 else 0
+        # heat exchange constant
+        self.heat_exchange_coeff = heat_exchange_coeff if heat_exchange_coeff > 0 else 0
         if self.diffusity_const == 0 or self.len_x == 0 or self.thermal_cond == 0 or self.heat_exchange_coeff == 0:
             raise ValueError('inappropriate parameters')
 
@@ -30,15 +37,18 @@ class HeatOneDimension(object):
         'Generate linear state space model dot(x) = Ax + Bu'
 
         'obtain linear model of the benchmark'
-        assert isinstance(num_x, int), "number of mesh point should be an integer"
+        assert isinstance(
+            num_x, int), "number of mesh point should be an integer"
 
         if num_x <= 0:
-            raise ValueError('number of mesh points should be larger than zero')
+            raise ValueError(
+                'number of mesh points should be larger than zero')
 
         disc_step_x = self.len_x / (num_x + 1)  # dicrezation step along x axis
         print "\ndiscretization step along x-axis is: {} cm".format(disc_step_x)
 
-        # changing the sparsity structure of a csr_matrix is expensive. lil_matrix is more efficient
+        # changing the sparsity structure of a csr_matrix is expensive.
+        # lil_matrix is more efficient
         matrix_a = sparse.lil_matrix((num_x, num_x))
         matrix_b = sparse.lil_matrix((num_x, 1))
 
@@ -64,7 +74,8 @@ class HeatOneDimension(object):
                 matrix_a[i, i] = matrix_a[i, i] + a / (1 + disc_step_x * k)
                 matrix_b[i, 0] = k / (disc_step_x * (1 + disc_step_x * k))
 
-        return self.diffusity_const * (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
+        return self.diffusity_const * \
+            (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
 
 
 class HeatTwoDimension1(object):
@@ -72,33 +83,40 @@ class HeatTwoDimension1(object):
     # This benchmark is from the book: "Partial differential equations for scientists and engineers
     # S. J. Farlow, Courier Corporation, 1993, Page 40,
 
-    def __init__(self, diffusity_const, heat_exchange_coeff, thermal_cond, len_x, len_y):
+    def __init__(self, diffusity_const, heat_exchange_coeff,
+                 thermal_cond, len_x, len_y):
         self.diffusity_const = diffusity_const if diffusity_const > 0 else 0  # diffusity constant
-        self.heat_exchange_coeff = heat_exchange_coeff if heat_exchange_coeff > 0 else 0  # heat exchange coefficient
+        # heat exchange coefficient
+        self.heat_exchange_coeff = heat_exchange_coeff if heat_exchange_coeff > 0 else 0
         self.thermal_cond = thermal_cond if thermal_cond > 0 else 0  # thermal conductivity
         self.len_x = len_x if len_x > 0 else 0  # length x
         self.len_y = len_y if len_y > 0 else 0  # length y
 
         if self.diffusity_const == 0 or self.heat_exchange_coeff == 0 or \
-                self.thermal_cond == 0 or  self.len_x == 0 or self.len_y == 0:
+                self.thermal_cond == 0 or self.len_x == 0 or self.len_y == 0:
             raise ValueError("inappropriate parameters")
         self.heat_lost_const = self.heat_exchange_coeff / self.thermal_cond
 
     def get_odes(self, num_x, num_y):
         'obtain linear model of the benchmark'
-        assert isinstance(num_x, int), "number of mesh point should be an integer"
-        assert isinstance(num_y, int), "number of messh point should be an integer"
+        assert isinstance(
+            num_x, int), "number of mesh point should be an integer"
+        assert isinstance(
+            num_y, int), "number of messh point should be an integer"
 
         if num_x <= 0 or num_y <= 0:
-            raise ValueError('number of mesh points should be larger than zero')
+            raise ValueError(
+                'number of mesh points should be larger than zero')
 
         disc_step_x = self.len_x / (num_x + 1)  # dicrezation step along x axis
         print "\ndiscretization step along x-axis is: {} cm".format(disc_step_x)
-        disc_step_y = self.len_y / (num_y + 1)  # discrezation step along y axis
+        # discrezation step along y axis
+        disc_step_y = self.len_y / (num_y + 1)
         print "\ndiscretization step along y-axis is: {} cm\n".format(disc_step_y)
 
         num_var = num_x * num_y  # number of discrezation state variables
-        # changing the sparsity structure of a csr_matrix is expensive. lil_matrix is more efficient
+        # changing the sparsity structure of a csr_matrix is expensive.
+        # lil_matrix is more efficient
         matrix_a = sparse.lil_matrix((num_var, num_var))
         matrix_b = sparse.lil_matrix((num_var, 3))
 
@@ -138,7 +156,8 @@ class HeatTwoDimension1(object):
             else:
                 matrix_a[i, i] = matrix_a[i, i] + b
 
-        return self.diffusity_const * (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
+        return self.diffusity_const * \
+            (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
 
 
 class HeatTwoDimension2(object):
@@ -154,7 +173,8 @@ class HeatTwoDimension2(object):
     # In the right side of the metal plate, the heat is exchanged with the environment
     # The boundary condition for the right hand side is: BC4:  u_x(len_x,y,t) = -k*[u(len_x,y,t) - g(t)]
     # k is the heat_lost_constant and g(t) is environment temperature, c1 <= g(t) <= c2
-    # The BC4 shows that the metal plate lost its heat linearly to the environment
+    # The BC4 shows that the metal plate lost its heat linearly to the
+    # environment
 
     # we assume the following initial condition (IC): u(x,y,0) = 0
 
@@ -162,44 +182,56 @@ class HeatTwoDimension2(object):
     # "Formal verification of hybrid systems using model order reduction and decomposition"
     # 2005, page 68
 
-    def __init__(self, diffusity_const, heat_exchange_coeff, thermal_cond, len_x, len_y, has_heat_source, heat_source_pos):
+    def __init__(self, diffusity_const, heat_exchange_coeff,
+                 thermal_cond, len_x, len_y, has_heat_source, heat_source_pos):
         self.diffusity_const = diffusity_const if diffusity_const > 0 else 0  # diffusity constant
-        self.heat_exchange_coeff = heat_exchange_coeff if heat_exchange_coeff > 0 else 0  # heat exchange coefficient
+        # heat exchange coefficient
+        self.heat_exchange_coeff = heat_exchange_coeff if heat_exchange_coeff > 0 else 0
         self.thermal_cond = thermal_cond if thermal_cond > 0 else 0  # thermal conductivity
         self.len_x = len_x if len_x > 0 else 0  # length x
         self.len_y = len_y if len_y > 0 else 0  # length y
 
         if (self.diffusity_const == 0 or self.heat_exchange_coeff == 0 or
-           self.thermal_cond == 0 or self.len_x == 0 or self.len_y == 0):
+                self.thermal_cond == 0 or self.len_x == 0 or self.len_y == 0):
             raise ValueError("inappropriate parameters")
         self.heat_lost_const = self.heat_exchange_coeff / self.thermal_cond
 
         self.has_heat_source = has_heat_source
-        assert isinstance(heat_source_pos, np.ndarray), "heat source pos is not an ndarray"
+        assert isinstance(
+            heat_source_pos, np.ndarray), "heat source pos is not an ndarray"
         if heat_source_pos.shape != (2,):
             raise ValueError("heat source position is not 2x1 array")
         if heat_source_pos[0] < 0 or heat_source_pos[1] > self.len_x:
             raise ValueError("Heat source position value error")
-        self.heat_source_pos = heat_source_pos  # an array to indicate the position of heat source
+        # an array to indicate the position of heat source
+        self.heat_source_pos = heat_source_pos
         # heat_source_pos = ([[x_start, x_end])
 
     def get_odes(self, num_x, num_y):
         'obtain the linear model of 2-d heat equation'
 
-        assert isinstance(num_x, int), "number of mesh point should be an integer"
-        assert isinstance(num_y, int), "number of messh point should be an integer"
+        assert isinstance(
+            num_x, int), "number of mesh point should be an integer"
+        assert isinstance(
+            num_y, int), "number of messh point should be an integer"
 
         if num_x <= 0 or num_y <= 0:
-            raise ValueError('number of mesh points should be larger than zero')
+            raise ValueError(
+                'number of mesh points should be larger than zero')
 
         disc_step_x = self.len_x / (num_x + 1)  # dicrezation step along x axis
         print "\ndiscretization step along x-axis:{}".format(disc_step_x)
-        disc_step_y = self.len_y / (num_y + 1)  # discrezation step along y axis
+        # discrezation step along y axis
+        disc_step_y = self.len_y / (num_y + 1)
         print "\ndiscretization step along y-axis:{}".format(disc_step_y)
 
         if self.has_heat_source:
-            heat_start_pos_x = int(math.floor(self.heat_source_pos[0] / disc_step_x)) - 1
-            heat_end_pos_x = int(math.floor(self.heat_source_pos[1] / disc_step_x)) - 1
+            heat_start_pos_x = int(
+                math.floor(
+                    self.heat_source_pos[0] / disc_step_x)) - 1
+            heat_end_pos_x = int(
+                math.floor(
+                    self.heat_source_pos[1] / disc_step_x)) - 1
 
             print "\nheat source is from point {} to point {} on x-axis\n".format(heat_start_pos_x, heat_end_pos_x)
 
@@ -207,7 +239,8 @@ class HeatTwoDimension2(object):
         # linear model of heat equation
 
         num_var = num_x * num_y  # number of discrezation variables
-        # changing the sparsity structure of a csr_matrix is expensive. lil_matrix is more efficient
+        # changing the sparsity structure of a csr_matrix is expensive.
+        # lil_matrix is more efficient
         matrix_a = sparse.lil_matrix((num_var, num_var))
         matrix_b = sparse.lil_matrix((num_var, 2))
         a = 1 / disc_step_x**2
@@ -221,7 +254,8 @@ class HeatTwoDimension2(object):
         for i in xrange(0, num_var):
             matrix_a[i, i] = c  # filling diagonal
             x_pos = i % num_x  # x-position corresponding to i-th state variable
-            y_pos = int((i - x_pos) / num_x)  # y-position corresponding to i-th variable
+            # y-position corresponding to i-th variable
+            y_pos = int((i - x_pos) / num_x)
             print "the {}-th state variable is the temperature at the point ({},{})".format(i, x_pos, y_pos)
 
             # fill along x - axis
@@ -252,13 +286,15 @@ class HeatTwoDimension2(object):
             else:
                 matrix_a[i, i] = matrix_a[i, i] + b
 
-        return self.diffusity_const * (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
+        return self.diffusity_const * \
+            (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
 
 
 class HeatThreeDimension(object):
     '3-dimensional heat equation'
 
-    def __init__(self, diffusity_const, heat_exchange_const, len_x, len_y, len_z, heat_source_pos):
+    def __init__(self, diffusity_const, heat_exchange_const,
+                 len_x, len_y, len_z, heat_source_pos):
 
         self.diffusity_const = diffusity_const if diffusity_const > 0 else 0
         self.heat_exchange_const = heat_exchange_const if heat_exchange_const > 0 else 0
@@ -275,7 +311,8 @@ class HeatThreeDimension(object):
             raise ValueError("heat source position should be 2 x 2 array")
         if (heat_source_pos[0, 0] < 0 or heat_source_pos[0, 1] > self.len_x or heat_source_pos[1, 0] < 0 or
                 heat_source_pos[1, 1] > self.len_y):
-            raise ValueError("heat source position should be inside the 3-d object")
+            raise ValueError(
+                "heat source position should be inside the 3-d object")
 
         self.heat_source_pos = heat_source_pos
 
@@ -300,11 +337,15 @@ class HeatThreeDimension(object):
         c = 1 / step_z**2
         d = -2 * (a + b + c)
 
-        heat_start_pos_x = int(math.ceil(self.heat_source_pos[0, 0] / step_x)) - 1
-        heat_stop_pos_x = int(math.floor(self.heat_source_pos[0, 1] / step_x)) - 1
+        heat_start_pos_x = int(
+            math.ceil(self.heat_source_pos[0, 0] / step_x)) - 1
+        heat_stop_pos_x = int(math.floor(
+            self.heat_source_pos[0, 1] / step_x)) - 1
 
-        heat_start_pos_y = int(math.ceil(self.heat_source_pos[1, 0] / step_y)) - 1
-        heat_stop_pos_y = int(math.floor(self.heat_source_pos[1, 1] / step_y)) - 1
+        heat_start_pos_y = int(
+            math.ceil(self.heat_source_pos[1, 0] / step_y)) - 1
+        heat_stop_pos_y = int(math.floor(
+            self.heat_source_pos[1, 1] / step_y)) - 1
 
         print"\nheat source is from pos_x = {} to pos_x = {}".format(heat_start_pos_x, heat_stop_pos_x)
         print"\nheat source is from pos_y = {} to pos_y = {}".format(heat_start_pos_y, heat_stop_pos_y)
@@ -346,11 +387,13 @@ class HeatThreeDimension(object):
 
             if x_pos == 0:   # u(0, j, k) = u(1, j, k): the left face
                 matrix_a[i, i] = matrix_a[i, i] + a
-            if y_pos == num_y - 1:  # u(i, num_y, k) = u(i, num_y - 1, k): the back face
+            if y_pos == num_y - \
+                    1:  # u(i, num_y, k) = u(i, num_y - 1, k): the back face
                 matrix_a[i, i] = matrix_a[i, i] + b
             if y_pos == 0:    # u(i, 0, k) = u(i, 1, k): the front face
                 matrix_a[i, i] = matrix_a[i, i] + b
-            if z_pos == num_z - 1:    # u(i, j, num_z) = u(i, j, num_z - 1): the top face
+            if z_pos == num_z - \
+                    1:    # u(i, j, num_z) = u(i, j, num_z - 1): the top face
                 matrix_a[i, i] = matrix_a[i, i] + c
 
             # heat source
@@ -363,39 +406,50 @@ class HeatThreeDimension(object):
 
             # diffusion
             if x_pos == num_x - 1:
-                matrix_a[i, i] = matrix_a[i, i] + a / (1 + self.heat_exchange_const * step_x)
+                matrix_a[i, i] = matrix_a[i, i] + a / \
+                    (1 + self.heat_exchange_const * step_x)
 
-        return self.diffusity_const * (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
+        return self.diffusity_const * \
+            (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
+
 
 class FirstOrderWaveEqOneDimension1(object):
     """Generate ODEs from 1-d wave equation"""
 
     # This benchmark is from the book: "Numerical Partial Differential Equations:
     # finite difference method"
-    # J. W. Thomas, Springer	
-    # we consider Dirichlet Boundary Condition at x = 0, u = 0.5. use backward space discretization difference scheme
+    # J. W. Thomas, Springer
+    # we consider Dirichlet Boundary Condition at x = 0, u = 0.5. use backward
+    # space discretization difference scheme
 
     def __init__(self, speed_const, len_x):
 
-	self.speed_const = speed_const if speed_const < 0 else 0  # speed_const be negative to ensure FTBS is correct for positive wave speed
+        if speed_const < 0:
+            self.speed_const = speed_const
+        else:
+            # nst be negative to ensure FTBS is correct for positive wave speed
+            self.speed_const = 0
+
         self.len_x = len_x if len_x > 0 else 0    # length along x-axis
         if self.speed_const == 0 or self.len_x == 0:
             raise ValueError('inappropriate parameters')
-
 
     def get_odes(self, num_x):
         'Generate linear state space model dot(x) = Ax + Bu'
 
         'obtain linear model of the benchmark'
-        assert isinstance(num_x, int), "number of mesh point should be an integer"
+        assert isinstance(
+            num_x, int), "number of mesh point should be an integer"
 
         if num_x <= 0:
-            raise ValueError('number of mesh points should be larger than zero')
+            raise ValueError(
+                'number of mesh points should be larger than zero')
 
         disc_step_x = self.len_x / num_x  # dicrezation step along x axis
         print "\ndiscretization step along x-axis is: {} cm".format(disc_step_x)
-		
-        # changing the sparsity structure of a csr_matrix is expensive. lil_matrix is more efficient
+
+        # changing the sparsity structure of a csr_matrix is expensive.
+        # lil_matrix is more efficient
         matrix_a = sparse.lil_matrix((num_x, num_x))
         matrix_b = sparse.lil_matrix((num_x, 1))
 
@@ -409,39 +463,44 @@ class FirstOrderWaveEqOneDimension1(object):
             # fill along x - axis, subdiagonal
             if (i - 1 >= 0):
                 matrix_a[i, i - 1] = -a
-				
-		#matrix_b[0, 0] = - a * 1/2
-		
+
+                matrix_b[0, 0] = - a * 1 / 2
+
         return matrix_a.tocsr(), matrix_b.tocsr()
+
 
 class FirstOrderWaveEqOneDimension2(object):
     """Generate ODEs from 1-d wave equation"""
 
     # This benchmark is from the book: "Numerical Partial Differential Equations:
     # finite difference method"
-    # J. W. Thomas, Springer	
-    # we consider Periodic Boundary Condition at x = 0, u = 0.5. use forward space discretization difference scheme
+    # J. W. Thomas, Springer
+    # we consider Periodic Boundary Condition at x = 0, u = 0.5. use forward
+    # space discretization difference scheme
 
-    def __init__(self, speed_const, len_x):# x = 0 is not included
-	self.speed_const = speed_const if speed_const > 0 else 0  # speed_const, wave moves backward
+    def __init__(self, speed_const, len_x):  # x = 0 is not included
+        # speed_const, wave moves backward
+        self.speed_const = speed_const if speed_const > 0 else 0
         self.len_x = len_x if len_x > 0 else 0    # length along x-axis
         if self.speed_const == 0 or self.len_x == 0:
             raise ValueError('inappropriate parameters')
-
 
     def get_odes(self, num_x):
         'Generate linear state space model dot(x) = Ax + Bu'
 
         'obtain linear model of the benchmark'
-        assert isinstance(num_x, int), "number of mesh point should be an integer"
+        assert isinstance(
+            num_x, int), "number of mesh point should be an integer"
 
         if num_x <= 0:
-            raise ValueError('number of mesh points should be larger than zero')
+            raise ValueError(
+                'number of mesh points should be larger than zero')
 
         disc_step_x = self.len_x / num_x  # dicrezation step along x axis
         print "\ndiscretization step along x-axis is: {} cm".format(disc_step_x)
-		
-        # changing the sparsity structure of a csr_matrix is expensive. lil_matrix is more efficient
+
+        # changing the sparsity structure of a csr_matrix is expensive.
+        # lil_matrix is more efficient
         matrix_a = sparse.lil_matrix((num_x, num_x))
         matrix_b = sparse.lil_matrix((num_x, 1))
 
@@ -454,38 +513,43 @@ class FirstOrderWaveEqOneDimension2(object):
 
             # fill along x - axis, subdiagonal
             matrix_a[i, i + 1] = a
-				
-	    matrix_a[num_x - 1, num_x - 1] = - a
-	    matrix_a[num_x - 1, 0] = a
-		
+
+            matrix_a[num_x - 1, num_x - 1] = - a
+            matrix_a[num_x - 1, 0] = a
+
         return matrix_a.tocsr(), matrix_b.tocsr()
 
-class FirstOrderWaveEqTwoDimension(object):		
+
+class FirstOrderWaveEqTwoDimension(object):
     """Generate ODEs from 2-d 1st order wave equation"""
 
     # This benchmark is from the book: "Numerical Partial Differential Equations:
     # finite difference method"
     # J. W. Thomas, Springer
-	
-	# we consider Dirichlet B.C. at x = 0, u = 0.5. and y = 0, u = 1. Use backward space discretization difference scheme
-	
+
+    # we consider Dirichlet B.C. at x = 0, u = 0.5. and y = 0, u = 1. Use
+    # backward space discretization difference scheme
+
     def __init__(self, xspeed_const, yspeed_const, len_x, len_y):
-	self.xspeed_const = xspeed_const if xspeed_const < 0 else 0  # xspeed_const, wave move forward
-	self.yspeed_const = yspeed_const if yspeed_const < 0 else 0  # yspeed_const
+        # xspeed_const, wave move forward
+        self.xspeed_const = xspeed_const if xspeed_const < 0 else 0
+        self.yspeed_const = yspeed_const if yspeed_const < 0 else 0  # yspeed_const
         self.len_x = len_x if len_x > 0 else 0  # length x
         self.len_y = len_y if len_y > 0 else 0  # length y
-	
-		
-	if self.xspeed_const == 0 or self.yspeed_const == 0 or self.len_x == 0 or self.len_y == 0:
+
+        if self.xspeed_const == 0 or self.yspeed_const == 0 or self.len_x == 0 or self.len_y == 0:
             raise ValueError('inappropriate parameters')
 
     def get_odes(self, num_x, num_y):
         'obtain linear model of the benchmark'
-        assert isinstance(num_x, int), "number of mesh point should be an integer"
-        assert isinstance(num_y, int), "number of messh point should be an integer"
+        assert isinstance(
+            num_x, int), "number of mesh point should be an integer"
+        assert isinstance(
+            num_y, int), "number of messh point should be an integer"
 
         if num_x <= 0 or num_y <= 0:
-            raise ValueError('number of mesh points should be larger than zero')
+            raise ValueError(
+                'number of mesh points should be larger than zero')
 
         disc_step_x = self.len_x / num_x  # dicrezation step along x axis
         print "\ndiscretization step along x-axis is: {} cm".format(disc_step_x)
@@ -493,54 +557,60 @@ class FirstOrderWaveEqTwoDimension(object):
         print "\ndiscretization step along y-axis is: {} cm\n".format(disc_step_y)
 
         num_var = num_x * num_y  # number of discrezation state variables
-        # changing the sparsity structure of a csr_matrix is expensive. lil_matrix is more efficient
+        # changing the sparsity structure of a csr_matrix is expensive.
+        # lil_matrix is more efficient
         matrix_a = sparse.lil_matrix((num_var, num_var))
-        matrix_b = sparse.lil_matrix((num_var, 1))	#incorporate 2 B.C. into one column 
+        # incorporate 2 B.C. into one column
+        matrix_b = sparse.lil_matrix((num_var, 1))
 
-        a = self.xspeed_const / disc_step_x	#xspeed/delta x
-        b = self.yspeed_const / disc_step_y 	#yspeed/delta y
+        a = self.xspeed_const / disc_step_x  # xspeed/delta x
+        b = self.yspeed_const / disc_step_y  # yspeed/delta y
 
         # fill matrix_a
 
-        for i in xrange(0, num_var):	#each submatrix is x by x and we have y by y blocks
+        for i in xrange(
+                0, num_var):  # each submatrix is x by x and we have y by y blocks
             matrix_a[i, i] = a + b    # filling diagonal
             x_pos = i % num_x     # x-position corresponding to i-th state variable
             y_pos = int((i - x_pos) / num_x)
-            #print "the {}th variable is the temperature at the mesh point ({},{})".format(i, x_pos, y_pos)
-            
-			# fill along x - axis
-            if y_pos == 0:#first block
-                matrix_a[i, i - 1] = -a  #building B
-		matrix_a[i, i] = b + a
-				
-		matrix_b[i, 0] = b* 0	  #B.C. at y = 0, we assume u = 1/2	
-				
+            # print "the {}th variable is the temperature at the mesh point
+            # ({},{})".format(i, x_pos, y_pos)
+
+            # fill along x - axis
+            if y_pos == 0:  # first block
+                matrix_a[i, i - 1] = -a  # building B
+                matrix_a[i, i] = b + a
+
+                matrix_b[i, 0] = b * 0  # B.C. at y = 0, we assume u = 1/2
+
             else:
-                matrix_a[i, i - 1] = -a  #building B
-		matrix_a[i, i] = b + a
-				
-		matrix_a[i, i - num_x] = -b # building - I
-			
-	    if x_pos == 0:
-		matrix_b[i, 0] = matrix_b[i, 0] - a * 0 #B.C. at x = 0, we assume u = 1			
-			
-        return matrix_a.tocsr(), matrix_b.tocsr()	
-		
+                matrix_a[i, i - 1] = -a  # building B
+                matrix_a[i, i] = b + a
+
+                matrix_a[i, i - num_x] = -b  # building - I
+
+            if x_pos == 0:
+                matrix_b[i, 0] = matrix_b[i, 0] - a * \
+                    0  # B.C. at x = 0, we assume u = 1
+
+        return matrix_a.tocsr(), matrix_b.tocsr()
+
+
 def sim_odeint_sparse(sparse_a_matrix, init_vec, input_vec, step, num_steps):
     'use odeint and keep the A matrix sparse'
 
     num_dims = sparse_a_matrix.shape[0]
 
-    #print "\n" + str(num_dims)
+    # print "\n" + str(num_dims)
 
     times = np.linspace(0, step, num_steps)
 
     def der_func(state, _):
         'linear derivative function'
-	#print "\n" + str(input_vec.shape)
-	#print "\n" + str(np.array(sparse_a_matrix * state).shape)
+        # print "\n" + str(input_vec.shape)
+        # print "\n" + str(np.array(sparse_a_matrix * state).shape)
         rv = np.array(sparse_a_matrix * state) + input_vec
-	#print "\n" + str(rv.shape)
+        # print "\n" + str(rv.shape)
         rv.shape = (num_dims,)
 
         return rv
