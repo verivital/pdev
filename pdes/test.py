@@ -8,7 +8,6 @@ import math
 import matplotlib.pyplot as plt
 import numpy as np
 from pdes import HeatOneDimension, HeatTwoDimension1, HeatTwoDimension2, sim_odeint_sparse, HeatThreeDimension, FirstOrderWaveEqOneDimension1, FirstOrderWaveEqOneDimension2, FirstOrderWaveEqTwoDimension
-
 from scipy.io import loadmat
 
 
