@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<sspaceex xmlns="http://www-verimag.imag.fr/xml-namespaces/sspaceex" version="0.2" math="SpaceEx">
+  <component id="core_component">
+    <param name="x0" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x1" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x2" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x3" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x4" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x5" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x6" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x7" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x8" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x9" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x10" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x11" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x12" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x13" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x14" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x15" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x16" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x17" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x18" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x19" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x20" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x21" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x22" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x23" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x24" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="t" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="stoptime" type="real" local="false" d1="1" d2="1" dynamics="const"/>
+    <location id="1" name="Model" x="362.0" y="430.0" width="426.0" height="610.0">
+      <invariant>
+        t &lt;= stoptime
+      </invariant>
+      <flow>
+        t' == 1
+        &amp;x0' ==  - 1.66666666667*x0 + 0.833333333333*x24
+        &amp;x1' ==  0.833333333333*x0 - 1.66666666667*x1
+        &amp;x2' == 0.833333333333*x1 - 1.66666666667*x2
+        &amp;x3' == 0.833333333333*x2 - 1.66666666667*x3
+        &amp;x4' == 0.833333333333*x3 - 1.66666666667*x4
+        &amp;x5' ==  0.833333333333*x0 + 0.833333333333*x4 - 1.66666666667*x5
+        &amp;x6' == 0.833333333333*x1 + 0.833333333333*x5 - 1.66666666667*x6
+        &amp;x7' == 0.833333333333*x2 + 0.833333333333*x6 - 1.66666666667*x7
+        &amp;x8' == 0.833333333333*x3 + 0.833333333333*x7 - 1.66666666667*x8
+        &amp;x9' == 0.833333333333*x4 + 0.833333333333*x8 - 1.66666666667*x9
+        &amp;x10' == 0.833333333333*x5 + 0.833333333333*x9 - 1.66666666667*x10
+        &amp;x11' == 0.833333333333*x6 + 0.833333333333*x10 - 1.66666666667*x11
+        &amp;x12' == 0.833333333333*x7 + 0.833333333333*x11 - 1.66666666667*x12
+        &amp;x13' == 0.833333333333*x8 + 0.833333333333*x12 - 1.66666666667*x13
+        &amp;x14' == 0.833333333333*x9 + 0.833333333333*x13 - 1.66666666667*x14
+        &amp;x15' == 0.833333333333*x10 + 0.833333333333*x14 - 1.66666666667*x15
+        &amp;x16' == 0.833333333333*x11 + 0.833333333333*x15 - 1.66666666667*x16
+        &amp;x17' == 0.833333333333*x12 + 0.833333333333*x16 - 1.66666666667*x17
+        &amp;x18' == 0.833333333333*x13 + 0.833333333333*x17 - 1.66666666667*x18
+        &amp;x19' == 0.833333333333*x14 + 0.833333333333*x18 - 1.66666666667*x19
+        &amp;x20' == 0.833333333333*x15 + 0.833333333333*x19 - 1.66666666667*x20
+        &amp;x21' == 0.833333333333*x16 + 0.833333333333*x20 - 1.66666666667*x21
+        &amp;x22' == 0.833333333333*x17 + 0.833333333333*x21 - 1.66666666667*x22
+        &amp;x23' == 0.833333333333*x18 + 0.833333333333*x22 - 1.66666666667*x23
+        &amp;x24' == 0.833333333333*x19 + 0.833333333333*x23 - 1.66666666667*x24
+      </flow>
+    </location>
+  </component>
+  <component id="sys">
+    <param name="x0" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x1" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x2" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x3" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x4" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x5" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x6" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x7" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x8" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x9" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x10" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x11" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x12" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x13" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x14" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x15" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x16" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x17" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x18" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x19" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x20" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x21" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x22" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x23" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x24" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="t" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="stoptime" type="real" local="false" d1="1" d2="1" dynamics="const" controlled="true"/>
+    <bind component="core_component" as="model">
+      <map key="x0">x0</map>
+      <map key="x1">x1</map>
+      <map key="x2">x2</map>
+      <map key="x3">x3</map>
+      <map key="x4">x4</map>
+      <map key="x5">x5</map>
+      <map key="x6">x6</map>
+      <map key="x7">x7</map>
+      <map key="x8">x8</map>
+      <map key="x9">x9</map>
+      <map key="x10">x10</map>
+      <map key="x11">x11</map>
+      <map key="x12">x12</map>
+      <map key="x13">x13</map>
+      <map key="x14">x14</map>
+      <map key="x15">x15</map>
+      <map key="x16">x16</map>
+      <map key="x17">x17</map>
+      <map key="x18">x18</map>
+      <map key="x19">x19</map>
+      <map key="x20">x20</map>
+      <map key="x21">x21</map>
+      <map key="x22">x22</map>
+      <map key="x23">x23</map>
+      <map key="x24">x24</map>
+      <map key="t">t</map>
+      <map key="stoptime">stoptime</map>
+    </bind>
+  </component></sspaceex>

@@ -45,12 +45,14 @@ def print_spaceex_xml_file_autonomous_ode(A, C, file_name):
 
     assert isinstance(
         A, np.ndarray) and A.shape[0] == A.shape[1], 'error: A is not an ndarray or A is not a square matrix'
-    assert isinstance(C, np.ndarray), 'error: C is not an ndarray'
-    assert C.shape[1] == A.shape[0], 'error: inconsistent between A and C'
+    if C is not None:
+        assert isinstance(C, np.ndarray), 'error: C is not an ndarray'
+        assert C.shape[1] == A.shape[0], 'error: inconsistent between A and C'
     assert isinstance(file_name, str), 'error: file name should be a string'
 
     n = A.shape[0]
-    m = C.shape[0]
+    if C is not None:
+        m = C.shape[0]
     xml_file = open(file_name, 'w')
 
     xml_file.write('<?xml version="1.0" encoding="iso-8859-1"?>\n')
@@ -63,9 +65,10 @@ def print_spaceex_xml_file_autonomous_ode(A, C, file_name):
     for i in xrange(0, n):
         xml_file.write(
             '    <param name="x{}" type="real" local="false" d1="1" d2="1" dynamics="any"/>\n'.format(i))
-    for i in xrange(0, m):
-        xml_file.write(
-            '    <param name="y{}" type="real" local="false" d1="1" d2="1" dynamics="any"/>\n'.format(i))
+    if C is not None:
+        for i in xrange(0, m):
+            xml_file.write(
+                '    <param name="y{}" type="real" local="false" d1="1" d2="1" dynamics="any"/>\n'.format(i))
     xml_file.write(
         '    <param name="t" type="real" local="false" d1="1" d2="1" dynamics="any"/>\n')
     xml_file.write(
@@ -77,11 +80,12 @@ def print_spaceex_xml_file_autonomous_ode(A, C, file_name):
     # print invariant
     xml_file.write('      <invariant>\n')
     xml_file.write('        t &lt;= stoptime\n')
-    output_dynamics = get_dynamics(C, 'x')
-    for i in xrange(0, m):
-        xml_file.write(
-            '        &amp;y{} == {}\n'.format(
-                i, output_dynamics[i]))
+    if C is not None:
+        output_dynamics = get_dynamics(C, 'x')
+        for i in xrange(0, m):
+            xml_file.write(
+                '        &amp;y{} == {}\n'.format(
+                    i, output_dynamics[i]))
     xml_file.write('      </invariant>\n')
 
     # print flow
@@ -101,9 +105,10 @@ def print_spaceex_xml_file_autonomous_ode(A, C, file_name):
     for i in xrange(0, n):
         xml_file.write(
             '    <param name="x{}" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>\n'.format(i))
-    for i in xrange(0, m):
-        xml_file.write(
-            '    <param name="y{}" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>\n'.format(i))
+    if C is not None:
+        for i in xrange(0, m):
+            xml_file.write(
+                '    <param name="y{}" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>\n'.format(i))
     xml_file.write(
         '    <param name="t" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>\n')
     xml_file.write(
@@ -112,8 +117,9 @@ def print_spaceex_xml_file_autonomous_ode(A, C, file_name):
     xml_file.write('    <bind component="core_component" as="model">\n')
     for i in xrange(0, n):
         xml_file.write('      <map key="x{}">x{}</map>\n'.format(i, i))
-    for i in xrange(0, m):
-        xml_file.write('      <map key="y{}">y{}</map>\n'.format(i, i))
+    if C is not None:
+        for i in xrange(0, m):
+            xml_file.write('      <map key="y{}">y{}</map>\n'.format(i, i))
     xml_file.write('      <map key="t">t</map>\n')
     xml_file.write('      <map key="stoptime">stoptime</map>\n')
     xml_file.write('    </bind>\n')
@@ -136,10 +142,11 @@ def print_spaceex_cfg_file_autonomous_ode(
     assert len(xmin_vec) == len(
         xmax_vec), 'error: inconsistency between xmin_vec and xmax_vec'
 
-    assert isinstance(ymin_vec, list), 'error: ymin_vec is not a list'
-    assert isinstance(ymax_vec, list), 'error: ymax_vec is not a list'
-    assert len(ymin_vec) == len(
-        ymax_vec), 'error: inconsistency between ymin_vec and ymax_vec'
+    if ymin_vec is not None:
+        assert isinstance(ymin_vec, list), 'error: ymin_vec is not a list'
+        assert isinstance(ymax_vec, list), 'error: ymax_vec is not a list'
+        assert len(ymin_vec) == len(
+            ymax_vec), 'error: inconsistency between ymin_vec and ymax_vec'
     assert isinstance(file_name, str)
 
     cfg_file = open(file_name, 'w')
@@ -150,13 +157,15 @@ def print_spaceex_cfg_file_autonomous_ode(
     # init string
     init_str = ''
     n = len(xmin_vec)
-    m = len(ymin_vec)
+    if ymin_vec is not None:
+        m = len(ymin_vec)
     for i in xrange(0, n):
         init_str = '{} x{} >= {} & x{} <= {} &'.format(
             init_str, i, xmin_vec[i], i, xmax_vec[i])
-    for i in xrange(0, m):
-        init_str = '{} y{} >= {} & y{} <= {} &'.format(
-            init_str, i, ymin_vec[i], i, ymax_vec[i])
+    if ymin_vec is not None:
+        for i in xrange(0, m):
+            init_str = '{} y{} >= {} & y{} <= {} &'.format(
+                init_str, i, ymin_vec[i], i, ymax_vec[i])
     init_str = '{} t == 0 & stoptime == {}'.format(init_str, stoptime)
 
     cfg_file.write('initially = "{}"\n'.format(init_str))
@@ -166,11 +175,20 @@ def print_spaceex_cfg_file_autonomous_ode(
     cfg_file.write('time-horizon = {}\n'.format(stoptime))
     cfg_file.write('iter-max = 10\n')
     output = ''
-    for i in xrange(0, m):
-        if i < m - 1:
-            output = '{}y{}, '.format(output, i)
-        else:
-            output = '{}y{}'.format(output, i)
+    if ymin_vec is not None:
+        for i in xrange(0, m):
+            if i < m - 1:
+                output = '{}y{}, '.format(output, i)
+            else:
+                output = '{}y{}'.format(output, i)
+
+    else:
+        for i in xrange(0, n):
+            if i < n - 1:
+                output = '{}x{}, '.format(output, i)
+            else:
+                output = '{}x{}'.format(output, i)
+
     cfg_file.write('output-variables = "t, {}" \n'.format(output))
     cfg_file.write('output-format = "GEN"\n')
     cfg_file.write('rel-err = 1.0e-8\n')
@@ -186,13 +204,18 @@ def print_spaceex_xml_file_non_autonomous_ode(A, B, C, file_name):
 
     assert isinstance(
         A, np.ndarray) and A.shape[0] == A.shape[1], 'error: A is not an ndarray or A is not a square matrix'
-    assert isinstance(C, np.ndarray), 'error: C is not an ndarray'
+    if C is not None:
+        assert isinstance(C, np.ndarray), 'error: C is not an ndarray'
     assert isinstance(B, np.ndarray), 'error: B is not an ndarray'
-    assert C.shape[1] == A.shape[0] == B.shape[0], 'error: inconsistent between A, B and C'
+    if C is not None:
+        assert C.shape[1] == A.shape[0] == B.shape[0], 'error: inconsistent between A, B and C'
+    else:
+        assert A.shape[0] == B.shape[0], 'error: inconsistent between A, B'
     assert isinstance(file_name, str), 'error: file name should be a string'
 
     n = A.shape[0]    # number of state variables
-    m = C.shape[0]    # number of outputs
+    if C is not None:
+        m = C.shape[0]    # number of outputs
     q = B.shape[1]    # number of inputs u
 
     xml_file = open(file_name, 'w')
@@ -207,9 +230,10 @@ def print_spaceex_xml_file_non_autonomous_ode(A, B, C, file_name):
     for i in xrange(0, n):
         xml_file.write(
             '    <param name="x{}" type="real" local="false" d1="1" d2="1" dynamics="any"/>\n'.format(i))
-    for i in xrange(0, m):
-        xml_file.write(
-            '    <param name="y{}" type="real" local="false" d1="1" d2="1" dynamics="any"/>\n'.format(i))
+    if C is not None:
+        for i in xrange(0, m):
+            xml_file.write(
+                '    <param name="y{}" type="real" local="false" d1="1" d2="1" dynamics="any"/>\n'.format(i))
 
     for i in xrange(0, q):
         xml_file.write(
@@ -226,11 +250,12 @@ def print_spaceex_xml_file_non_autonomous_ode(A, B, C, file_name):
     # print invariant
     xml_file.write('      <invariant>\n')
     xml_file.write('        t &lt;= stoptime\n')
-    output_dynamics = get_dynamics(C, 'x')
-    for i in xrange(0, m):
-        xml_file.write(
-            '        &amp;y{} == {}\n'.format(
-                i, output_dynamics[i]))
+    if C is not None:
+        output_dynamics = get_dynamics(C, 'x')
+        for i in xrange(0, m):
+            xml_file.write(
+                '        &amp;y{} == {}\n'.format(
+                    i, output_dynamics[i]))
     xml_file.write('      </invariant>\n')
 
     # print flow
@@ -242,7 +267,6 @@ def print_spaceex_xml_file_non_autonomous_ode(A, B, C, file_name):
         C1 = A[i]
         B1 = B[i]
         xi_dynamics = get_dynamics(C1, 'x')
-        print "\nxi dynamics = {}".format(xi_dynamics)
         ui_dynamics = get_dynamics(B1, 'u')
         xml_file.write(
             '        &amp;x{}\' == {} + ({})\n'.format(i, xi_dynamics[0], ui_dynamics[0]))
@@ -256,9 +280,10 @@ def print_spaceex_xml_file_non_autonomous_ode(A, B, C, file_name):
     for i in xrange(0, n):
         xml_file.write(
             '    <param name="x{}" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>\n'.format(i))
-    for i in xrange(0, m):
-        xml_file.write(
-            '    <param name="y{}" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>\n'.format(i))
+    if C is not None:
+        for i in xrange(0, m):
+            xml_file.write(
+                '    <param name="y{}" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>\n'.format(i))
     for i in xrange(0, q):
         xml_file.write(
             '    <param name="u{}" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>\n'.format(i))
@@ -270,8 +295,9 @@ def print_spaceex_xml_file_non_autonomous_ode(A, B, C, file_name):
     xml_file.write('    <bind component="core_component" as="model">\n')
     for i in xrange(0, n):
         xml_file.write('      <map key="x{}">x{}</map>\n'.format(i, i))
-    for i in xrange(0, m):
-        xml_file.write('      <map key="y{}">y{}</map>\n'.format(i, i))
+    if C is not None:
+        for i in xrange(0, m):
+            xml_file.write('      <map key="y{}">y{}</map>\n'.format(i, i))
     for i in xrange(0, q):
         xml_file.write('      <map key="u{}">u{}</map>\n'.format(i, i))
     xml_file.write('      <map key="t">t</map>\n')
@@ -296,10 +322,12 @@ def print_spaceex_cfg_file_non_autonomous_ode(
     assert len(xmin_vec) == len(
         xmax_vec), 'error: inconsistency between xmin_vec and xmax_vec'
 
-    assert isinstance(ymin_vec, list), 'error: ymin_vec is not a list'
-    assert isinstance(ymax_vec, list), 'error: ymax_vec is not a list'
-    assert len(ymin_vec) == len(
-        ymax_vec), 'error: inconsistency between ymin_vec and ymax_vec'
+    if ymin_vec is not None:
+        assert isinstance(ymin_vec, list), 'error: ymin_vec is not a list'
+        assert isinstance(ymax_vec, list), 'error: ymax_vec is not a list'
+    if ymin_vec is not None and ymax_vec is not None:
+        assert len(ymin_vec) == len(
+            ymax_vec), 'error: inconsistency between ymin_vec and ymax_vec'
 
     assert isinstance(umin_vec, list), 'error: umin_vec is not a list'
     assert isinstance(umax_vec, list), 'error: umax_vec is not a list'
@@ -316,15 +344,17 @@ def print_spaceex_cfg_file_non_autonomous_ode(
     # init string
     init_str = ''
     n = len(xmin_vec)
-    m = len(ymin_vec)
+    if ymin_vec is not None:
+        m = len(ymin_vec)
     q = len(umin_vec)
 
     for i in xrange(0, n):
         init_str = '{} x{} >= {} & x{} <= {} &'.format(
             init_str, i, xmin_vec[i], i, xmax_vec[i])
-    for i in xrange(0, m):
-        init_str = '{} y{} >= {} & y{} <= {} &'.format(
-            init_str, i, ymin_vec[i], i, ymax_vec[i])
+    if ymin_vec is not None:
+        for i in xrange(0, m):
+            init_str = '{} y{} >= {} & y{} <= {} &'.format(
+                init_str, i, ymin_vec[i], i, ymax_vec[i])
     for i in xrange(0, q):
         init_str = '{} u{} >= {} & u{} <= {} &'.format(
             init_str, i, umin_vec[i], i, umax_vec[i])
@@ -337,11 +367,18 @@ def print_spaceex_cfg_file_non_autonomous_ode(
     cfg_file.write('time-horizon = {}\n'.format(stoptime))
     cfg_file.write('iter-max = 10\n')
     output = ''
-    for i in xrange(0, m):
-        if i < m - 1:
-            output = '{}y{}, '.format(output, i)
-        else:
-            output = '{}y{}'.format(output, i)
+    if ymin_vec is not None:
+        for i in xrange(0, m):
+            if i < m - 1:
+                output = '{}y{}, '.format(output, i)
+            else:
+                output = '{}y{}'.format(output, i)
+    else:
+        for i in xrange(0, n):
+            if i < n - 1:
+                output = '{}x{}, '.format(output, i)
+            else:
+                output = '{}x{}'.format(output, i)
     cfg_file.write('output-variables = "t, {}" \n'.format(output))
     cfg_file.write('output-format = "GEN"\n')
     cfg_file.write('rel-err = 1.0e-8\n')
@@ -412,8 +449,11 @@ class Printer(object):
         cfg_file_name = '{}.cfg'.format(file_name)
         xml_file = print_spaceex_xml_file_autonomous_ode(
             A, C, xml_file_name)    # print xml file
-
-        ymin_vec, ymax_vec = get_ymin_ymax(C, init_xmin_vec, init_xmax_vec)
+        if C is not None:
+            ymin_vec, ymax_vec = get_ymin_ymax(C, init_xmin_vec, init_xmax_vec)
+        else:
+            ymin_vec = None
+            ymax_vec = None
         cfg_file = print_spaceex_cfg_file_autonomous_ode(
             init_xmin_vec, init_xmax_vec, ymin_vec, ymax_vec, stoptime, step, cfg_file_name)
 
@@ -429,8 +469,11 @@ class Printer(object):
         cfg_file_name = '{}.cfg'.format(file_name)
         xml_file = print_spaceex_xml_file_non_autonomous_ode(
             A, B, C, xml_file_name)    # print xml file
-
-        ymin_vec, ymax_vec = get_ymin_ymax(C, init_xmin_vec, init_xmax_vec)
+        if C is not None:
+            ymin_vec, ymax_vec = get_ymin_ymax(C, init_xmin_vec, init_xmax_vec)
+        else:
+            ymin_vec = None
+            ymax_vec = None
         cfg_file = print_spaceex_cfg_file_non_autonomous_ode(
             init_xmin_vec,
             init_xmax_vec,
@@ -629,8 +672,6 @@ def test():
     A = np.matrix([[1, 1], [0, 1]])
     B = np.matrix([[1, 0], [1, 1]])
     C = np.matrix([1, 2])
-    print "\nC = {}".format(C)
-    print "\nshape C = {}".format(C.shape)
 
     xmin_vec = [1, 0]
     xmax_vec = [1.2, 1]
@@ -650,8 +691,6 @@ def test_flow_printer():
     A = np.matrix([[1, 1], [0, 1]])
     B = np.matrix([[1, 0], [1, 1]])
     C = np.matrix([1, 2])
-    print "\nC = {}".format(C)
-    print "\nshape C = {}".format(C.shape)
 
     xmin_vec = [1, 0]
     xmax_vec = [1.2, 1]

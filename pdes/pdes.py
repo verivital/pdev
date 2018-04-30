@@ -413,63 +413,7 @@ class HeatThreeDimension(object):
             (matrix_a.tocsr()), self.diffusity_const * (matrix_b.tocsr())
 
 
-class FirstOrderWaveEqOneDimension1(object):
-    """Generate ODEs from 1-d wave equation"""
-
-    # This benchmark is from the book: "Numerical Partial Differential Equations:
-    # finite difference method"
-    # J. W. Thomas, Springer
-    # we consider Dirichlet Boundary Condition at x = 0, u = 0.5. use backward
-    # space discretization difference scheme
-
-    def __init__(self, speed_const, len_x):
-
-        if speed_const < 0:
-            self.speed_const = speed_const
-        else:
-            # nst be negative to ensure FTBS is correct for positive wave speed
-            self.speed_const = 0
-
-        self.len_x = len_x if len_x > 0 else 0    # length along x-axis
-        if self.speed_const == 0 or self.len_x == 0:
-            raise ValueError('inappropriate parameters')
-
-    def get_odes(self, num_x):
-        'Generate linear state space model dot(x) = Ax + Bu'
-
-        'obtain linear model of the benchmark'
-        assert isinstance(
-            num_x, int), "number of mesh point should be an integer"
-
-        if num_x <= 0:
-            raise ValueError(
-                'number of mesh points should be larger than zero')
-
-        disc_step_x = self.len_x / num_x  # dicrezation step along x axis
-        print "\ndiscretization step along x-axis is: {} cm".format(disc_step_x)
-
-        # changing the sparsity structure of a csr_matrix is expensive.
-        # lil_matrix is more efficient
-        matrix_a = sparse.lil_matrix((num_x, num_x))
-        matrix_b = sparse.lil_matrix((num_x, 1))
-
-        a = self.speed_const / disc_step_x
-
-        # fill matrix_a
-
-        for i in xrange(0, num_x):
-            matrix_a[i, i] = a  # filling diagonal
-
-            # fill along x - axis, subdiagonal
-            if (i - 1 >= 0):
-                matrix_a[i, i - 1] = -a
-
-                matrix_b[0, 0] = - a * 1 / 2
-
-        return matrix_a.tocsr(), matrix_b.tocsr()
-
-
-class FirstOrderWaveEqOneDimension2(object):
+class FirstOrderWaveEqOneDimension(object):
     """Generate ODEs from 1-d wave equation"""
 
     # This benchmark is from the book: "Numerical Partial Differential Equations:
@@ -497,12 +441,10 @@ class FirstOrderWaveEqOneDimension2(object):
                 'number of mesh points should be larger than zero')
 
         disc_step_x = self.len_x / num_x  # dicrezation step along x axis
-        print "\ndiscretization step along x-axis is: {} cm".format(disc_step_x)
 
         # changing the sparsity structure of a csr_matrix is expensive.
         # lil_matrix is more efficient
         matrix_a = sparse.lil_matrix((num_x, num_x))
-        matrix_b = sparse.lil_matrix((num_x, 1))
 
         a = self.speed_const / disc_step_x
 
@@ -517,7 +459,7 @@ class FirstOrderWaveEqOneDimension2(object):
             matrix_a[num_x - 1, num_x - 1] = - a
             matrix_a[num_x - 1, 0] = a
 
-        return matrix_a.tocsr(), matrix_b.tocsr()
+        return matrix_a.tocsr()
 
 
 class FirstOrderWaveEqTwoDimension(object):
@@ -560,8 +502,6 @@ class FirstOrderWaveEqTwoDimension(object):
         # changing the sparsity structure of a csr_matrix is expensive.
         # lil_matrix is more efficient
         matrix_a = sparse.lil_matrix((num_var, num_var))
-        # incorporate 2 B.C. into one column
-        matrix_b = sparse.lil_matrix((num_var, 1))
 
         a = self.xspeed_const / disc_step_x  # xspeed/delta x
         b = self.yspeed_const / disc_step_y  # yspeed/delta y
@@ -573,15 +513,12 @@ class FirstOrderWaveEqTwoDimension(object):
             matrix_a[i, i] = a + b    # filling diagonal
             x_pos = i % num_x     # x-position corresponding to i-th state variable
             y_pos = int((i - x_pos) / num_x)
-            # print "the {}th variable is the temperature at the mesh point
-            # ({},{})".format(i, x_pos, y_pos)
+            print "the {}th variable is the temperature at the mesh point ({},{})".format(i, x_pos, y_pos)
 
             # fill along x - axis
             if y_pos == 0:  # first block
                 matrix_a[i, i - 1] = -a  # building B
                 matrix_a[i, i] = b + a
-
-                matrix_b[i, 0] = b * 0  # B.C. at y = 0, we assume u = 1/2
 
             else:
                 matrix_a[i, i - 1] = -a  # building B
@@ -589,11 +526,7 @@ class FirstOrderWaveEqTwoDimension(object):
 
                 matrix_a[i, i - num_x] = -b  # building - I
 
-            if x_pos == 0:
-                matrix_b[i, 0] = matrix_b[i, 0] - a * \
-                    0  # B.C. at x = 0, we assume u = 1
-
-        return matrix_a.tocsr(), matrix_b.tocsr()
+        return matrix_a.tocsr()
 
 
 def sim_odeint_sparse(sparse_a_matrix, init_vec, input_vec, step, num_steps):

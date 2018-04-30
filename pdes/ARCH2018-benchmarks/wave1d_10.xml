@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<sspaceex xmlns="http://www-verimag.imag.fr/xml-namespaces/sspaceex" version="0.2" math="SpaceEx">
+  <component id="core_component">
+    <param name="x0" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x1" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x2" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x3" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x4" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x5" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x6" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x7" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x8" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="x9" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="t" type="real" local="false" d1="1" d2="1" dynamics="any"/>
+    <param name="stoptime" type="real" local="false" d1="1" d2="1" dynamics="const"/>
+    <location id="1" name="Model" x="362.0" y="430.0" width="426.0" height="610.0">
+      <invariant>
+        t &lt;= stoptime
+      </invariant>
+      <flow>
+        t' == 1
+        &amp;x0' ==  - 0.333333333333*x0 + 0.333333333333*x1
+        &amp;x1' ==  - 0.333333333333*x1 + 0.333333333333*x2
+        &amp;x2' ==  - 0.333333333333*x2 + 0.333333333333*x3
+        &amp;x3' ==  - 0.333333333333*x3 + 0.333333333333*x4
+        &amp;x4' ==  - 0.333333333333*x4 + 0.333333333333*x5
+        &amp;x5' ==  - 0.333333333333*x5 + 0.333333333333*x6
+        &amp;x6' ==  - 0.333333333333*x6 + 0.333333333333*x7
+        &amp;x7' ==  - 0.333333333333*x7 + 0.333333333333*x8
+        &amp;x8' ==  - 0.333333333333*x8 + 0.333333333333*x9
+        &amp;x9' ==  0.333333333333*x0 - 0.333333333333*x9
+      </flow>
+    </location>
+  </component>
+  <component id="sys">
+    <param name="x0" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x1" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x2" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x3" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x4" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x5" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x6" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x7" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x8" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="x9" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="t" type="real" local="false" d1="1" d2="1" dynamics="any" controlled="true"/>
+    <param name="stoptime" type="real" local="false" d1="1" d2="1" dynamics="const" controlled="true"/>
+    <bind component="core_component" as="model">
+      <map key="x0">x0</map>
+      <map key="x1">x1</map>
+      <map key="x2">x2</map>
+      <map key="x3">x3</map>
+      <map key="x4">x4</map>
+      <map key="x5">x5</map>
+      <map key="x6">x6</map>
+      <map key="x7">x7</map>
+      <map key="x8">x8</map>
+      <map key="x9">x9</map>
+      <map key="t">t</map>
+      <map key="stoptime">stoptime</map>
+    </bind>
+  </component></sspaceex>

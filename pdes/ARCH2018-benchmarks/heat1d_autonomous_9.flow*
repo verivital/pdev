@@ -1,0 +1,44 @@
+continuous reachability 
+{ 
+ state var 
+ x0, x1, x2, x3, x4, x5, x6, x7, x8, t 
+ setting 
+ { 
+  fixed steps 0.1 
+  time 10.0 
+  remainder estimation 1e-3 
+  identity precondition 
+  gnuplot octagon t, x0 
+  fixed order 30 
+  cutoff 1e-15 
+  precision 256 
+  output heat1d_autonomous_9.flow* 
+  print on 
+ } 
+ lti ode 
+ { 
+  x0' =  - 1.16*x0 + 1.16*x1
+  x1' =  1.16*x0 - 2.32*x1 + 1.16*x2
+  x2' = 1.16*x1 - 2.32*x2 + 1.16*x3
+  x3' = 1.16*x2 - 2.32*x3 + 1.16*x4
+  x4' = 1.16*x3 - 2.32*x4 + 1.16*x5
+  x5' = 1.16*x4 - 2.32*x5 + 1.16*x6
+  x6' = 1.16*x5 - 2.32*x6 + 1.16*x7
+  x7' = 1.16*x6 - 2.32*x7 + 1.16*x8
+  x8' = 1.16*x7 - 2.26476190476*x8
+  t' = 1 
+  } 
+ init 
+ { 
+  x0 in [0.1, 0.2] 
+  x1 in [0.0, 0.0] 
+  x2 in [0.0, 0.0] 
+  x3 in [0.0, 0.0] 
+  x4 in [0.0, 0.0] 
+  x5 in [0.0, 0.0] 
+  x6 in [0.0, 0.0] 
+  x7 in [0.0, 0.0] 
+  x8 in [0.0, 0.0] 
+  t in [0, 0] 
+ } 
+}
