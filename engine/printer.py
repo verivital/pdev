@@ -431,7 +431,16 @@ class Printer(object):
             A, B, C, xml_file_name)    # print xml file
 
         ymin_vec, ymax_vec = get_ymin_ymax(C, init_xmin_vec, init_xmax_vec)
-        cfg_file = print_spaceex_cfg_file_non_autonomous_ode(init_xmin_vec, init_xmax_vec, ymin_vec, ymax_vec, umin_vec, umax_vec, stoptime, step, cfg_file_name)
+        cfg_file = print_spaceex_cfg_file_non_autonomous_ode(
+            init_xmin_vec,
+            init_xmax_vec,
+            ymin_vec,
+            ymax_vec,
+            umin_vec,
+            umax_vec,
+            stoptime,
+            step,
+            cfg_file_name)
 
         return xml_file, cfg_file
 
@@ -514,9 +523,104 @@ class Printer(object):
 
     @staticmethod
     def print_flow_non_homo_odes(
-            A, B, C, init_min_vec, init_max_vec, umin_vec, umax_vec, stoptime, step, file_name):
+            A, B, init_min_vec, init_max_vec, umin_vec, umax_vec, stoptime, step, file_name):
         'Print homogenous ODE dot{x} = Ax + Bu, to Flow* format'
-        pass
+
+        assert isinstance(
+            A, np.ndarray) and A.shape[0] == A.shape[1], 'error: A is not an ndarray or not a square matrix'
+        assert isinstance(B, np.ndarray), 'error: B is not an ndarray'
+
+        assert B.shape[0] == A.shape[0], 'error: in consistency between A and B dimension'
+
+        assert isinstance(
+            init_max_vec, list), 'error: init_max_vec is not a list'
+        assert isinstance(
+            init_min_vec, list), 'error: init_min_vec is not a list'
+        assert len(init_max_vec) == len(
+            init_min_vec) == A.shape[0], 'error: inconsistency between initial condition and matrix A dimension'
+        assert isinstance(umin_vec, list), 'error: umin_vec is not a list'
+        assert isinstance(umax_vec, list), 'error: umax_vec is not a list'
+        assert len(umin_vec) == len(
+            umax_vec) == B.shape[1], 'error: inconsistency between input condition and matrix B dimension'
+
+        n = A.shape[0]
+        m = B.shape[1]
+
+        flow_model = open(file_name, 'w')
+
+        flow_model.write('continuous reachability \n')
+        flow_model.write('{ \n')
+
+        # print state variables
+
+        flow_model.write(' state var \n')
+        var_str = ''
+        for i in xrange(0, n):
+            var_x = ' x{},'.format(i)
+            var_str = var_str + var_x
+        flow_model.write(var_str)
+
+        input_str = ''
+        for i in xrange(0, m):
+            input_u = ' u{},'.format(i)
+            input_str = input_str + input_u
+        flow_model.write(input_str)
+        flow_model.write(' t \n')
+
+        # print setting
+
+        flow_model.write(' setting \n')
+        flow_model.write(' { \n')
+        flow_model.write('  fixed steps {} \n'.format(step))
+        flow_model.write('  time {} \n'.format(stoptime))
+        flow_model.write('  remainder estimation 1e-3 \n')
+        flow_model.write('  identity precondition \n')
+        flow_model.write('  gnuplot octagon t, x0 \n')
+        flow_model.write('  fixed order 30 \n')
+        flow_model.write('  cutoff 1e-15 \n')
+        flow_model.write('  precision 256 \n')
+        flow_model.write('  output {} \n'.format(file_name))
+        flow_model.write('  print on \n')
+        flow_model.write(' } \n')
+
+        # print lti ode
+
+        flow_model.write(' lti ode \n')
+        flow_model.write(' { \n')
+
+        for i in xrange(0, n):
+            C1 = A[i]
+            C2 = B[i]
+            xi_dynamics = get_dynamics(C1, 'x')
+            ui_dynamics = get_dynamics(C2, 'u')
+            dynamics = '{} + ({})'.format(xi_dynamics[0], ui_dynamics[0])
+
+            flow_model.write('  x{}\' = {}\n'.format(i, dynamics))
+
+        flow_model.write('  t\' = 1 \n')
+        flow_model.write('  } \n')
+
+        # print initial set
+
+        flow_model.write(' init \n')
+        flow_model.write(' { \n')
+
+        for i in xrange(0, n):
+            flow_model.write(
+                '  x{} in [{}, {}] \n'.format(
+                    i, init_min_vec[i], init_max_vec[i]))
+        for i in xrange(0, m):
+            flow_model.write(
+                '  u{} in [{}, {}] \n'.format(
+                    i, umin_vec[i], umax_vec[i]))
+
+        flow_model.write('  t in [0, 0] \n')
+        flow_model.write(' } \n')
+
+        # end model
+        flow_model.write('}')
+
+        return flow_model
 
 
 def test():
@@ -537,8 +641,30 @@ def test():
     step = 0.1
     file_name = 'test'
 
-    Printer().print_spaceex_non_homo_odes(A, B, C, xmin_vec, xmax_vec, umin_vec, umax_vec, stoptime, step, file_name)
+    Printer().print_spaceex_non_homo_odes(A, B, C, xmin_vec,
+                                          xmax_vec, umin_vec, umax_vec, stoptime, step, file_name)
+
+
+def test_flow_printer():
+
+    A = np.matrix([[1, 1], [0, 1]])
+    B = np.matrix([[1, 0], [1, 1]])
+    C = np.matrix([1, 2])
+    print "\nC = {}".format(C)
+    print "\nshape C = {}".format(C.shape)
+
+    xmin_vec = [1, 0]
+    xmax_vec = [1.2, 1]
+    umin_vec = [0.1, 0.2]
+    umax_vec = [0.2, 0.3]
+
+    stoptime = 1.0
+    step = 0.1
+    file_name = 'test'
+
+    Printer().print_flow_non_homo_odes(A, B, xmin_vec, xmax_vec, umin_vec, umax_vec, stoptime, step, file_name)
 
 
 if __name__ == '__main__':
-    test()
+    # test()
+    test_flow_printer()
