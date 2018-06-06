@@ -69,6 +69,22 @@ class DPdeAutomaton(object):
         self.xlist = xlist
         self.time_step = time_step
 
+
+    def set_xlist_time_step_w(self, xlist, time_step):
+        'set list of meshpoints and time step'
+        assert isinstance(xlist, list)
+        assert len(xlist) >= 3, 'xlist should have at least three poibnts'
+        for i in xrange(0, len(xlist) - 1):
+            assert 0 <= xlist[i] < xlist[i + 1], 'invalid xlist'
+
+        if self.matrix_a is not None:
+            assert 2*(len(xlist) - 2) == self.matrix_a.shape[0], 'inconsistent xlist'
+
+        assert (time_step > 0), 'time step k = {} should be >= 0'.format(time_step)
+        self.xlist = xlist
+        self.time_step = time_step
+
+
     def set_fxdom(self, xdom):
         'set range of space that input function f(x,t) is affected'
 
@@ -108,12 +124,19 @@ class DPdeAutomaton(object):
 
         for i in xrange(0, n):
 
-            if i == 0:
+            if i == 0:# no computing at this stage
                 current_V = self.init_vector
-                current_l = csc_matrix((self.init_vector.shape[0], 1), dtype=float)
+		#print "\n V shape:\n{}".format(current_V.shape[0])
+                current_l = csc_matrix((self.init_vector.shape[0], 1), dtype=float)#l is empty initially
+		print "\n current_l:\n{}".format(current_l.shape[0])
             else:
                 current_V = self.matrix_a * current_V
-                current_l = self.vector_b[i] + self.matrix_a * current_l
+		#print "\n matrix_a shape:\n{}".format(self.matrix_a.shape[0])
+		print "\n vecb:\n{}".format(self.vector_b)
+		print "\n i:\n{}".format(i)
+
+
+                current_l = (self.vector_b[i] + self.vector_b[i-1]) / 2+ self.matrix_a * current_l
 
             u_list.append(current_V.multiply(alpha_value) + current_l.multiply(beta_value))
 

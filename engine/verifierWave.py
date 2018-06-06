@@ -1,20 +1,22 @@
 '''
 This module implements continuous/discreted verifier for PDE automaton
 Dung Tran: Nov/2017
-Tianshu Bao: Mar/2018
+Tianshu Bao: Jun/2018
 '''
 
 from scipy.sparse import csc_matrix, lil_matrix
 from scipy.optimize import minimize
 from engine.pde_automaton import DPdeAutomaton
 from engine.set import DReachSet
-from engine.interpolation import Interpolation
+from engine.interpolation_wave import Interpolation
 from engine.femwave import Fem1Dw
 from engine.functions import Functions
 from engine.specification import SafetySpecification
+from engine.plot import Plot
 import math
 import numpy as np
-
+import matplotlib.pyplot as plt
+from sympy import Function
 
 class ReachSetAssembler(object):
     'compute all necessary reachable sets'
@@ -26,9 +28,8 @@ class ReachSetAssembler(object):
 
     @staticmethod
     def get_cur_u_dreachset(matrix_a, prev_u, cur_b_vec):
-        'compute the current approximate discrete reachable set of u'
+        'compute the current approximate discrete reachable set of u, cur_b_vec = g_n = [0,0,0...0, (b_n + b_(n-1))k/2]^T'
 
-        # has the form of u[n] = Au[n-1] + b[n] = alpha * Vn + beta * ln
         assert isinstance(matrix_a, csc_matrix)
         assert isinstance(prev_u, DReachSet)
         assert isinstance(cur_b_vec, csc_matrix) and cur_b_vec.shape[1] == 1, 'invalid current vector b'
@@ -36,82 +37,38 @@ class ReachSetAssembler(object):
 
         cur_u_dreachset = DReachSet()
         cur_u_dreachset.Vn = matrix_a * prev_u.Vn
-        cur_u_dreachset.ln = matrix_a * prev_u.ln + cur_b_vec	#need 2 inputs, also cur - 1 vec_b 
+        cur_u_dreachset.ln = matrix_a * prev_u.ln + cur_b_vec
         cur_u_dreachset.alpha_range = prev_u.alpha_range
         cur_u_dreachset.beta_range = prev_u.beta_range
 
         return cur_u_dreachset
 
     @staticmethod
-    def get_cur_err_dreachset(matrix_a, prev_e, cur_b_set):
+    def get_cur_err_dreachset(matrix_a, prev_e, cur_b_vec):
         'compute the current approximate discreate reachable set of error e'
-
-        # cur_b_set = alpha * Ve + beta * le
-        # prev_e = alpha * Vn + beta * ln
-        # e[n] = A * e[n-1] + b[n]
 
         assert isinstance(matrix_a, csc_matrix)
         assert isinstance(prev_e, DReachSet)
-        assert isinstance(cur_b_set, DReachSet)
-        assert matrix_a.shape[0] == cur_b_set.Vn.shape[0] == prev_e.Vn.shape[0] \
-          == cur_b_set.ln.shape[0] == prev_e.ln.shape[0], 'inconsistent'
+        assert isinstance(cur_b_vec, csc_matrix)
+        assert matrix_a.shape[0] == cur_b_vec.shape[0] == prev_e.Vn.shape[0] == prev_e.ln.shape[0], 'inconsistent'
 
         cur_err_dreachset = DReachSet()
-        cur_err_dreachset.Vn = matrix_a * prev_e.Vn + cur_b_set.Vn
-        cur_err_dreachset.ln = matrix_a * prev_e.ln + cur_b_set.ln
+        cur_err_dreachset.Vn = matrix_a * prev_e.Vn
+        cur_err_dreachset.ln = matrix_a * prev_e.ln + cur_b_vec
         cur_err_dreachset.alpha_range = prev_e.alpha_range
         cur_err_dreachset.beta_range = prev_e.beta_range
 
         return cur_err_dreachset
 
     @staticmethod
-    def get_cur_be(pre_u, cur_u, dPde, cur_time):
+    def get_cur_be(prev_u, curr_u, dPde, cur_time):
         'compute b[n], e[n] = A * e[n-1] + be[n]'
 
         assert isinstance(dPde, DPdeAutomaton)
 
-        def get_V1_l1(V, l, xlist):# how to configure this???
-            '\int (u_n(x) p_i(x))dx = alpha * V1 + beta * l1'
-
-            assert isinstance(V, csc_matrix)
-            assert isinstance(l, csc_matrix)
-            assert V.shape == l.shape
-            n = V.shape[0]
-            assert n == 2*(len(xlist) - 2)#change
-
-            V1 = lil_matrix((n, 1), dtype=float)
-            l1 = lil_matrix((n, 1), dtype=float)
-            for i in xrange(0, n/2):##change
-                hi = xlist[i + 1] - xlist[i]
-                hi_plus_1 = xlist[i + 2] - xlist[i + 1]
-                if i == 0:
-                    V1[i, 0] = V[i, 0] * (hi / 3 + hi_plus_1 / 3) + V[i + 1, 0] * hi_plus_1 / 6
-                    l1[i, 0] = l[i, 0] * (hi / 3 + hi_plus_1 / 3) + l[i + 1, 0] * hi_plus_1 / 6
-                elif i == n - 1:
-                    V1[i, 0] = V[i, 0] * (hi / 3 + hi_plus_1 / 3) + V[i - 1, 0] * hi / 6
-                    l1[i, 0] = l[i, 0] * (hi / 3 + hi_plus_1 / 3) + l[i - 1, 0] * hi / 6
-                elif 0 < i < n - 1:
-                    V1[i, 0] = V[i, 0] * (hi / 3 + hi_plus_1 / 3) + V[i - 1, 0] * hi / 6 + V[i + 1, 0] * hi_plus_1 / 6
-                    l1[i, 0] = l[i, 0] * (hi / 3 + hi_plus_1 / 3) + l[i - 1, 0] * hi / 6 + l[i + 1, 0] * hi_plus_1 / 6
-
-            return V1, l1
-
-        cur_be = DReachSet()
-        pre_V1, pre_l1 = get_V1_l1(pre_u.Vn, pre_u.ln, dPde.xlist)
-        cur_V1, cur_l1 = get_V1_l1(cur_u.Vn, cur_u.ln, dPde.xlist)
-
-	cur_b_vec_1 = Fem1Dw.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time)	###change here to 2n
-        cur_b_vec_2 = Fem1Dw.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time - 1)	###change here to 2n
-	cur_b_vec = (cur_b_vec_1 + cur_b_vec_2)/2
-
-        #cur_b_vec = Fem1D.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time)
-
-        cur_be.Vn = dPde.inv_b_matrix * (pre_V1 - cur_V1)
-        cur_be.ln = dPde.inv_b_matrix * (cur_b_vec + pre_l1 - cur_l1)
-        cur_be.alpha_range = dPde.alpha_range
-        cur_be.beta_range = dPde.beta_range
-
-        return cur_be
+        cur_b_vec = Fem1Dw.load_assembler_err(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time, prev_u, curr_u)
+	
+        return cur_b_vec
 
     @staticmethod
     def get_dreachset(dPde, toTimeStep):
@@ -125,30 +82,34 @@ class ReachSetAssembler(object):
         bloated_dreachset_list = []
 
         for cur_time in xrange(0, toTimeStep + 1):
-            err_dreachset = DReachSet()
             u_dreachset = DReachSet()
             if cur_time == 0:
                 u_Vn = dPde.init_vector
                 u_ln = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
-                err_Vn = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
-                err_ln = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
                 u_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, u_Vn, u_ln)
-                err_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, err_Vn, err_ln)
 
             else:
-                cur_b_vec = Fem1D.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time)
-                u_dreachset = ReachSetAssembler.get_cur_u_dreachset(dPde.matrix_a, \
-                                                                        u_dreachset_list[cur_time - 1], cur_b_vec)
+                cur_g_vec = Fem1Dw.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time)
+                u_dreachset = ReachSetAssembler.get_cur_u_dreachset(dPde.matrix_a, u_dreachset_list[cur_time - 1], cur_g_vec)																	
+	    u_dreachset_list.append(u_dreachset)									
+	 
 
-                cur_be = ReachSetAssembler.get_cur_be(u_dreachset_list[cur_time - 1], u_dreachset, dPde, cur_time)
-                err_dreachset = ReachSetAssembler.get_cur_err_dreachset(dPde.matrix_a, err_dreachset_list[cur_time - 1], cur_be)
+        for cur_time in xrange(0, toTimeStep + 1):
+	    err_dreachset = DReachSet()
+            if cur_time == 0:
+		err_Vn = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
+		err_ln = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
+		err_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, err_Vn, err_ln)
 
-            u_dreachset_list.append(u_dreachset)
-            err_dreachset_list.append(err_dreachset)
+            else:
+		cur_be = ReachSetAssembler.get_cur_be(u_dreachset_list[cur_time - 1], u_dreachset, dPde, cur_time)
+		err_dreachset = ReachSetAssembler.get_cur_err_dreachset(dPde.matrix_a, err_dreachset_list[cur_time - 1], cur_be)																
+	    
+	    err_dreachset_list.append(err_dreachset)
+	    bloated_dreachset = DReachSet()
+            bloated_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, u_dreachset_list[cur_time].Vn + err_dreachset.Vn, u_dreachset_list[cur_time].ln + err_dreachset.ln)
+	    bloated_dreachset_list.append(bloated_dreachset)
 
-            bloated_dreachset = DReachSet()
-            bloated_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, u_dreachset.Vn + err_dreachset.Vn, u_dreachset.ln + err_dreachset.ln)
-            bloated_dreachset_list.append(bloated_dreachset)
 
         return u_dreachset_list, err_dreachset_list, bloated_dreachset_list
 
@@ -161,6 +122,8 @@ class ReachSetAssembler(object):
 
         u_dset, e_dset, bl_dset = ReachSetAssembler.get_dreachset(dPde, toTimeStep)
         n = len(u_dset)
+
+
         u_setinspace_list = []    # interpolation set of u set in space
         e_setinspace_list = []    # interpolation set of error set in space
         bl_setinspace_list = []    # interpolation set of bloated set in space
@@ -176,12 +139,11 @@ class ReachSetAssembler(object):
 
         # interpolation set in both space and time
         for i in xrange(1, n):
-            u_set_list.append(Interpolation.increm_interpolation(dPde.time_step, i, u_setinspace_list[i - 1], u_setinspace_list[i]))
-            e_set_list.append(Interpolation.increm_interpolation(dPde.time_step, i, e_setinspace_list[i - 1], e_setinspace_list[i]))
-            bl_set_list.append(Interpolation.increm_interpolation(dPde.time_step, i, bl_setinspace_list[i - 1], bl_setinspace_list[i]))
+            u_set_list.append(Interpolation.increm_interpolation(dPde.time_step, i, u_setinspace_list[i - 1], u_setinspace_list[i], u_dset[i - 1], u_dset[i]))
+            e_set_list.append(Interpolation.increm_interpolation(dPde.time_step, i, e_setinspace_list[i - 1], e_setinspace_list[i], e_dset[i - 1], e_dset[i]))
+            bl_set_list.append(Interpolation.increm_interpolation(dPde.time_step, i, bl_setinspace_list[i - 1], bl_setinspace_list[i], bl_dset[i - 1], bl_dset[i]))
 
         return u_setinspace_list, e_setinspace_list, bl_setinspace_list, u_set_list, e_set_list, bl_set_list
-
 
 class VerificationResult(object):
     'Result object for verification'
@@ -418,49 +380,49 @@ class Verifier(object):
 		
 if __name__ == '__main__':
 	FEM = Fem1Dw()
-	mesh_points = [0.0, 0.5, 1.0, 1.5, 2.0]    # generate mesh points
+	mesh_points = [0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0]    # generate mesh points
 	step = 0.1    # time step of FEM
-	x_dom = [0.5, 1.0]    # domain of input function
+	x_dom = [0.0, 0.01]    # domain of input function
+	xlist = mesh_points
 
 	dPde = Fem1Dw().get_dPde_automaton(mesh_points, x_dom, step)##wave FEM		
 	dPde.set_perturbation((0.99,1.01),(0.99,1.01))
 		
 	toTimeStep = 10
-	assert isinstance(dPde, DPdeAutomaton)
-  assert isinstance(toTimeStep, int) and toTimeStep >= 0
-		
-	u_dreachset_list = []
-  err_dreachset_list = []
-	bloated_dreachset_list = []
-	dPde.set_perturbation
+	rsa = ReachSetAssembler()
+	#u_dset = rsa.get_dreachset(dPde, toTimeStep)##test new get_dreachset method
+	u_setinspace_list, e_setinspace_list, bl_setinspace_list, u_set_list, e_set_list, bl_set_list = rsa.get_interpolationset(dPde, toTimeStep)
+	
 
-	for cur_time in xrange(0, toTimeStep + 1):
-      u_dreachset = DReachSet()
-	    err_dreachset = DReachSet()
-            if cur_time == 0:
-                u_Vn = dPde.init_vector
-                u_ln = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)##init_vector is 2n
-                u_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, u_Vn, u_ln)
+	pl = Plot()
+	fig2, ax = plt.subplots()
+	box = bl_setinspace_list[8].get_2D_boxes((0.99,1.01),(0.99,1.01))
+	ax = pl.plot_boxes(ax, box, facecolor='cyan', edgecolor='cyan')
+	fig2.axes.append(ax)
+	plt.show()
 
-		            err_Vn = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
-		            err_ln = csc_matrix((dPde.init_vector.shape[0], 1), dtype=float)
-		            err_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, err_Vn, err_ln)
+	bl_boxes_3d = []
+    	for i in xrange(0, len(bl_set_list)):
+        	box3d = bl_set_list[i].get_3D_boxes((0.99,1.01), (0.99,1.01))	
+        	bl_boxes_3d.append(box3d)
 
+    	fig2 = plt.figure()
+    	ax2 = fig2.add_subplot(111, projection='3d')
+    	pl2 = Plot()
 
-            else:
-                cur_b_vec_1 = Fem1Dw.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time)	###change here to 2n
-                cur_b_vec_2 = Fem1Dw.load_assembler(dPde.xlist, dPde.f_xdom, dPde.time_step, cur_time - 1)	###change here to 2n
-		            cur_b_vec = (cur_b_vec_1 + cur_b_vec_2)/2
-                u_dreachset = ReachSetAssembler.get_cur_u_dreachset(dPde.matrix_a, u_dreachset_list[cur_time - 1], cur_b_vec)																	
-		            cur_be = ReachSetAssembler.get_cur_be(u_dreachset_list[cur_time - 1], u_dreachset, dPde, cur_time)
-		            err_dreachset = ReachSetAssembler.get_cur_err_dreachset(dPde.matrix_a, err_dreachset_list[cur_time - 1], cur_be)																
-	    u_dreachset_list.append(u_dreachset)
-	    err_dreachset_list.append(err_dreachset)
+    	ax2 = pl2.plot_interpolationset(ax2, bl_boxes_3d, facecolor='c', linewidth=0.5, edgecolor='r')
+    	ax2.set_xlim(0, 5.0)
+    	ax2.set_ylim(0, 2.0)
+    	ax2.set_zlim(-1.5, 1.5)
+    	ax2.tick_params(axis='z', labelsize=10)
+    	ax2.tick_params(axis='x', labelsize=10)
+    	ax2.tick_params(axis='y', labelsize=10)
+    	ax2.set_xlabel('$x$', fontsize=10)
+    	ax2.set_ylabel('$t$', fontsize=10)
+    	ax2.set_zlabel(r'$e_h(x,t)$', fontsize=10)
+    	fig2.suptitle('3-Dimensional Reachable Set', fontsize=15)
+    	fig2.savefig('reachset_3D.pdf')
 
-	    bloated_dreachset = DReachSet()
-      bloated_dreachset.set_reach_set(dPde.alpha_range, dPde.beta_range, u_dreachset.Vn + err_dreachset.Vn, u_dreachset.ln + err_dreachset.ln)
-	    bloated_dreachset_list.append(bloated_dreachset)
-
-	    print "\n u_dreachset:\n{}".format(u_dreachset.Vn + u_dreachset.ln)
-	    print "\n err_dreachset:\n{}".format(err_dreachset.Vn + err_dreachset.ln)  
-	    print "\n bloated_dreachset:\n{}".format(bloated_dreachset.Vn + bloated_dreachset.ln)														
+	plt.show()
+	
+						

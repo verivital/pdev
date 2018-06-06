@@ -122,9 +122,9 @@ class RectangleSet3D(object):
         assert isinstance(zmin, float)
         assert isinstance(zmax, float)
 
-        assert xmin < xmax, 'invalid set, xmin = {} is not < than xmax = {}'.format(xmin, xmax)
-        assert ymin < ymax, 'invalid set, ymin = {} is not < than ymax = {}'.format(ymin, ymax)
-        assert zmin < zmax, 'invalid set, zmin = {} is not < than zmax = {}'.format(zmin, zmax)
+        assert xmin <= xmax, 'invalid set, xmin = {} is not < than xmax = {}'.format(xmin, xmax)
+        assert ymin <= ymax, 'invalid set, ymin = {} is not < than ymax = {}'.format(ymin, ymax)
+        assert zmin <= zmax, 'invalid set, zmin = {} is not < than zmax = {}'.format(zmin, zmax)
 
         self.xmin = xmin
         self.xmax = xmax
