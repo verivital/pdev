@@ -3,7 +3,7 @@ This module implements some basic functions used for reachable set computation a
 Dung Tran: Nov/2017
 '''
 
-from sympy import Piecewise, And, Function, lambdify, integrate, exp, sin
+from sympy import Piecewise, And, Function, lambdify, integrate, exp, sin, Mul
 from sympy.abc import x, t, alpha, beta
 from scipy.optimize import minimize
 
@@ -74,6 +74,37 @@ class Functions(object):
         return func, lambdify((x, t), func)
 
     @staticmethod
+    def integrate_input_func_mul_phi_in_space(seg_x, x_dom, ti):
+        'integration of f(x,t) * phi function along x at time = ti'
+
+        # x_dom is the domain of f function
+        assert isinstance(x_dom, list)
+        assert len(x_dom) == 2, 'invalid x_range or t_range inputs'
+        assert 0 <= x_dom[0] < x_dom[1], 'invalid domains'
+
+        func, _ = Functions.input_func_mul_phi(seg_x)
+	intg = integrate(func, (x, x_dom[0], x_dom[1]))	
+	lmbf = lambdify(t, intg)
+
+        return lmbf(ti)	#evaluate the function at ti
+
+    @staticmethod
+    def integrate_input_func_mul_phi_in_space(seg_x, x_dom, ti):
+        'integration of f(x,t) * phi function along x at time = ti'
+
+        # x_dom is the domain of f function
+        assert isinstance(x_dom, list)
+        assert len(x_dom) == 2, 'invalid x_range or t_range inputs'
+        assert 0 <= x_dom[0] < x_dom[1], 'invalid domains'
+
+        func, _ = Functions.input_func_mul_phi(seg_x)
+	intg = integrate(func, (x, x_dom[0], x_dom[1]))	
+	lmbf = lambdify(t, intg)
+
+        return lmbf(ti)	#evaluate the function at ti
+
+
+    @staticmethod
     def integrate_input_func_mul_phi(seg_x, x_dom, t_dom):
         'integration of f(x,t) * phi function along x and t'
 
@@ -87,13 +118,14 @@ class Functions(object):
 
         return intg
 
+
     @staticmethod
     def init_func():
-        'define initial condition function u0(x)'
+        'define initial condition function u0(x) = sin(x)'
 
         # can be general function with variable x
         func = Function('func')
-        func = sin(x / 10.0)    # you can change u0(x) function here
+        func = sin(x)    # you can change u0(x) function here
         return func, lambdify(x, func)
 
     @staticmethod
@@ -251,7 +283,7 @@ if __name__ == '__main__':
     print "\nresult_MAX = {}".format(res2)
 
     ################################################################
-
+    
     x_range = [0, 0.5, 1]
     fphi, fphi_eval = Functions.input_func_mul_phi(x_range)
 

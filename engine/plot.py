@@ -101,7 +101,7 @@ class Plot(object):
         return ax
 
     @staticmethod
-    def plot_3d_boxes(ax, boxes_list, facecolor, linewidth, edgecolor):
+    def plot_3d_boxes(ax, boxes_list, facecolor, linewidth, edgecolor):	
         'plot 3d boxes contain reachable set'
 
         assert isinstance(boxes_list, list)
@@ -182,7 +182,7 @@ class Plot(object):
         assert isinstance(interpolationset_list, list)
         assert isinstance(ax, Axes3D)
 
-        for boxes_list in interpolationset_list:
+        for boxes_list in interpolationset_list:	
             ax = Plot.plot_3d_boxes(ax, boxes_list, facecolor, linewidth, edgecolor)
 
         return ax
